@@ -1,0 +1,2036 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>California Latino Farmworker Communities Map</title>
+  
+  <!-- Load the ArcGIS Maps SDK for JavaScript core API -->
+  <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css"/>
+  
+  <!-- Add Papa Parse for CSV parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: 'Avenir Next', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    
+    #viewDiv {
+      height: 100%;
+      width: 100%;
+    }
+    
+    #infoPanel {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 99;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      width: 320px;
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+      padding: 15px;
+    }
+
+    .search-container {
+      display: flex;
+      margin-bottom: 15px;
+    }
+
+    #communitySearchInput {
+      flex-grow: 1;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px 0 0 4px;
+      font-size: 14px;
+    }
+
+    #communitySearchBtn {
+      background-color: #0079c1;
+      color: white;
+      border: none;
+      border-radius: 0 4px 4px 0;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    #communitySearchBtn:hover {
+      background-color: #005e95;
+    }
+
+    .search-icon {
+      font-style: normal;
+    }
+
+    .search-results {
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #eee;
+    }
+
+    .search-result-count {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .highlight {
+      background-color: #ffffa0;
+      font-weight: bold;
+    }
+    
+    #legendPanel {
+      position: absolute;
+      bottom: 250px;
+      left: 20px;
+      z-index: 99;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      padding: 15px;
+      max-width: 280px;
+    }
+
+    #debugPanel {
+      position: absolute;
+      bottom: 30px;
+      right: 20px;
+      z-index: 99;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      padding: 15px;
+      max-width: 300px;
+      max-height: 200px;
+      overflow: auto;
+      font-size: 12px;
+      transition: max-height 0.3s ease;
+    }
+
+    .debug-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      cursor: default;
+    }
+
+    #debugPanel.minimized {
+      max-height: 40px;
+      overflow: hidden;
+    }
+
+    #debugPanel.minimized #debugContent {
+      display: none;
+    }
+
+    #minimizeDebugBtn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: #0079c1;
+      padding: 0 5px;
+      line-height: 1;
+    }
+
+    #minimizeDebugBtn:hover {
+      color: #005e95;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    
+    .legend-text {
+      font-size: 0.9em;
+    }
+    
+    .filter-btn {
+      margin: 5px 5px 5px 0;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      background-color: #f0f0f0;
+      cursor: pointer;
+      font-size: 0.85em;
+    }
+    
+    .filter-btn.active {
+      background-color: #0079c1;
+      color: white;
+    }
+    
+    .community-item {
+      border-bottom: 1px solid #eee;
+      padding: 8px 0;
+    }
+    
+    .community-name {
+      font-weight: bold;
+      color: #0079c1;
+    }
+    
+    .title-bar {
+      background-color: #0079c1;
+      color: white;
+      padding: 10px 15px;
+      margin: -15px -15px 15px -15px;
+      border-radius: 8px 8px 0 0;
+    }
+    
+    .stats-container {
+      display: flex;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .stat-box {
+      flex: 1;
+      text-align: center;
+      background-color: #f9f9f9;
+      padding: 10px;
+      border-radius: 4px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      min-width: 80px;
+    }
+    
+    .stat-box:last-child {
+      margin-right: 0;
+    }
+    
+    .stat-value {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #0079c1;
+    }
+    
+    .stat-label {
+      font-size: 0.8em;
+      color: #666;
+    }
+    
+    .action-btn {
+      background-color: #0079c1;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin-top: 10px;
+      width: 100%;
+      cursor: pointer;
+    }
+    
+    .action-btn:hover {
+      background-color: #005e95;
+    }
+
+    #resetViewBtn {
+      position: absolute;
+      bottom: 150px;
+      left: 20px;
+      z-index: 99;
+      background-color: white;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      padding: 10px 15px;
+      cursor: pointer;
+    }
+    
+    #resetCacheBtn {
+      position: absolute;
+      bottom: 200px;
+      left: 20px;
+      z-index: 99;
+      background-color: white;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      padding: 10px 15px;
+      cursor: pointer;
+      color: #d9534f;
+    }
+    
+    .filter-group {
+      margin-bottom: 10px;
+    }
+    
+    .filter-label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      font-size: 0.9em;
+    }
+    
+    .region-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    .loading-spinner {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #0079c1;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 2s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    .loading-text {
+      color: #333;
+      font-size: 1.2em;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .tab-container {
+      margin-bottom: 15px;
+    }
+    
+    .tab-button {
+      padding: 8px 12px;
+      background-color: #f0f0f0;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px 4px 0 0;
+      margin-right: 2px;
+    }
+    
+    .tab-button.active {
+      background-color: #0079c1;
+      color: white;
+    }
+    
+    .tab-content {
+      display: none;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 0 4px 4px 4px;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .size-legend {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+    
+    .size-circles {
+      display: flex;
+      align-items: flex-end;
+      margin-right: 10px;
+    }
+    
+    .size-circle {
+      border: 1px solid #666;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    
+    .size-labels {
+      display: flex;
+      font-size: 0.8em;
+      color: #666;
+    }
+    
+    .size-label {
+      width: 50px;
+      text-align: center;
+    }
+    
+    .population-stat {
+      font-size: 0.85em;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    
+    .loading-progress {
+      width: 100%;
+      max-width: 300px;
+      height: 20px;
+      background-color: #f3f3f3;
+      border-radius: 10px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background-color: #0079c1;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="viewDiv"></div>
+  
+  <div id="infoPanel">
+    <div class="title-bar">
+      <h2 style="margin: 0; font-size: 1.2em;">California Latino Farmworker Communities</h2>
+    </div>
+
+    <div class="search-container">
+      <input type="text" id="communitySearchInput" placeholder="Search communities...">
+      <button id="communitySearchBtn"><i class="search-icon">🔍</i></button>
+    </div>
+    
+    <div class="stats-container">
+      <div class="stat-box">
+        <div class="stat-value" id="communityCount">0</div>
+        <div class="stat-label">Communities</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="regionCount">0</div>
+        <div class="stat-label">Regions</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="totalPopulation">0</div>
+        <div class="stat-label">Total Population</div>
+      </div>
+    </div>
+    
+    <div class="tab-container">
+      <button class="tab-button active" onclick="openTab(event, 'filterTab')">Filters</button>
+      <button class="tab-button" onclick="openTab(event, 'statsTab')">Statistics</button>
+    </div>
+    
+    <div id="filterTab" class="tab-content active">
+      <div class="filter-group">
+        <div class="filter-label">Region:</div>
+        <button id="filterAllRegions" class="filter-btn active">All Regions</button>
+        <button id="filterCentralValley" class="filter-btn">Central Valley</button>
+        <button id="filterCoachella" class="filter-btn">Coachella Valley</button>
+        <button id="filterImperial" class="filter-btn">Imperial Valley</button>
+        <button id="filterSalinas" class="filter-btn">Salinas Valley</button>
+        <button id="filterSantaMaria" class="filter-btn">Santa Maria Valley</button>
+      </div>
+      
+      <div class="filter-group">
+        <div class="filter-label">Latino Population:</div>
+        <button id="filterAll" class="filter-btn active">All</button>
+        <button id="filterHigh" class="filter-btn">&gt; 95%</button>
+        <button id="filterMed" class="filter-btn">85-95%</button>
+        <button id="filterLow" class="filter-btn">&lt; 85%</button>
+      </div>
+    </div>
+    
+    <div id="statsTab" class="tab-content">
+      <div id="regionBreakdown"></div>
+      <div id="populationBreakdown"></div>
+    </div>
+    
+    <div id="selectedCommunity" style="margin: 15px 0; font-weight: bold;"></div>
+    <div id="communitiesList" style="margin-top: 10px;"></div>
+  </div>
+  
+  <div id="legendPanel">
+    <h3 style="margin-top: 0; margin-bottom: 10px;">Legend</h3>
+    
+    <div class="legend-section">
+      <h4 style="margin: 10px 0;">Agricultural Regions</h4>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #8BC34A;"></div>
+        <div class="legend-text">Central Valley</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #FF5722;"></div>
+        <div class="legend-text">Coachella Valley</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #FFC107;"></div>
+        <div class="legend-text">Imperial Valley</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #2196F3;"></div>
+        <div class="legend-text">Salinas Valley</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #9C27B0;"></div>
+        <div class="legend-text">Santa Maria Valley</div>
+      </div>
+    </div>
+    
+    <div class="size-legend">
+      <div>
+        <div style="margin-bottom: 10px; font-weight: bold;">Latino Population %</div>
+        <div class="size-circles">
+          <div class="size-circle" style="width: 24px; height: 24px;"></div>
+          <div class="size-circle" style="width: 16px; height: 16px;"></div>
+          <div class="size-circle" style="width: 10px; height: 10px;"></div>
+        </div>
+        <div class="size-labels">
+          <div class="size-label">&gt;95%</div>
+          <div class="size-label">85-95%</div>
+          <div class="size-label">&lt;85%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="debugPanel">
+    <div class="debug-header">
+      <h3 style="margin-top: 0; margin-bottom: 10px; display: inline-block;">Debug Info</h3>
+      <button id="minimizeDebugBtn" style="float: right; background: none; border: none; cursor: pointer;">−</button>
+    </div>
+    <div id="debugContent"></div>
+  </div>
+  
+  <button id="resetViewBtn">Reset View</button>
+  <button id="resetCacheBtn">Reset Cache</button>
+  
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading communities data...</div>
+    <div class="loading-progress">
+      <div id="progressBar" class="progress-bar"></div>
+    </div>
+  </div>
+
+  <!-- Load ArcGIS API -->
+  <script src="https://js.arcgis.com/4.32/"></script>
+  <script>
+    // Tab navigation
+    function openTab(evt, tabName) {
+      const tabContents = document.getElementsByClassName("tab-content");
+      for (let i = 0; i < tabContents.length; i++) {
+        tabContents[i].classList.remove("active");
+      }
+      
+      const tabButtons = document.getElementsByClassName("tab-button");
+      for (let i = 0; i < tabButtons.length; i++) {
+        tabButtons[i].classList.remove("active");
+      }
+      
+      document.getElementById(tabName).classList.add("active");
+      evt.currentTarget.classList.add("active");
+    }
+    
+    // Debug function to log information
+    function debugLog(message) {
+      const debugContent = document.getElementById("debugContent");
+      if (debugContent) {
+        const logItem = document.createElement("div");
+        logItem.textContent = message;
+        debugContent.appendChild(logItem);
+        
+        // Auto-scroll to bottom of debug panel
+        debugContent.scrollTop = debugContent.scrollHeight;
+      }
+      console.log(message);
+    }
+    
+    // Define agricultural regions and their colors
+    const regionTypes = {
+      "Central Valley": {
+        name: "Central Valley",
+        color: [139, 195, 74, 0.8], // #8BC34A
+        csvBase: "data_centralvalley.csv"
+      },
+      "Coachella Valley": {
+        name: "Coachella Valley",
+        color: [255, 87, 34, 0.8], // #FF5722
+        csvBase: "data_coachellavalley.csv"
+      },
+      "Imperial Valley": {
+        name: "Imperial Valley",
+        color: [255, 193, 7, 0.8], // #FFC107
+        csvBase: "data_imperialvalley.csv"
+      },
+      "Salinas Valley": {
+        name: "Salinas Valley",
+        color: [33, 150, 243, 0.8], // #2196F3
+        csvBase: "data_salinasvalley.csv"
+      },
+      "Santa Maria Valley": {
+        name: "Santa Maria Valley",
+        color: [156, 39, 176, 0.8], // #9C27B0
+        csvBase: "data_santamariavalley.csv"
+      }
+    };
+    
+    // GitHub content URLs for CSV files
+    const githubBaseUrl = "https://raw.githubusercontent.com/YOUR-USERNAME/latino-farmworker-map/main/";
+    
+    // Flag to control using static data vs GitHub data
+    let useStaticData = false; // Set to false to attempt GitHub loading
+    
+    // Static CSV data embedded in the HTML as a fallback
+    const csvData = {
+      "Central Valley": `Name,County,Total Population,Latino Population,Latino Percentage,Region,Lat,Lng
+Mendota,Fresno,12595,12169,96.62,Central Valley,36.7541,-120.3822
+Parlier,Fresno,14576,14227,97.61,Central Valley,36.6116,-119.5271
+Huron,Fresno,6206,5937,95.67,Central Valley,36.2077,-120.1024
+San Joaquin,Fresno,3701,3540,95.65,Central Valley,36.6066,-120.1838
+Orange Cove,Fresno,9649,9159,94.92,Central Valley,36.6249,-119.3132
+Firebaugh,Fresno,8096,7486,92.47,Central Valley,36.8591,-120.4566
+Cutler,Tulare,4480,4309,96.18,Central Valley,36.5228,-119.2867
+Earlimart,Tulare,7679,7045,91.74,Central Valley,35.8844,-119.2730
+Woodville,Tulare,1680,1522,90.60,Central Valley,36.0875,-119.1742
+Dinuba,Tulare,24563,21599,87.93,Central Valley,36.5427,-119.3870
+McFarland,Kern,14161,13451,94.99,Central Valley,35.6778,-119.2292
+Arvin,Kern,19495,18317,93.96,Central Valley,35.2019,-118.8327`,
+      
+      "Coachella Valley": `Name,County,Total Population,Latino Population,Latino Percentage,Region,Lat,Lng
+Mecca,Riverside,8219,8053,97.98,Coachella Valley,33.5731,-116.0773
+Coachella,Riverside,41941,40421,96.38,Coachella Valley,33.6803,-116.1739
+Thermal,Riverside,2676,2530,94.54,Coachella Valley,33.6400,-116.1394`,
+      
+      "Imperial Valley": `Name,County,Total Population,Latino Population,Latino Percentage,Region,Lat,Lng
+Calexico,Imperial,38633,37548,97.19,Imperial Valley,32.6789,-115.4989`,
+      
+      "Salinas Valley": `Name,County,Total Population,Latino Population,Latino Percentage,Region,Lat,Lng
+Greenfield,Monterey,18937,17804,94.02,Salinas Valley,36.3211,-121.2436
+Gonzales,Monterey,8647,7945,91.88,Salinas Valley,36.5067,-121.4439
+King City,Monterey,13332,11936,89.53,Salinas Valley,36.2125,-121.1275
+Soledad,Monterey,24925,19789,79.39,Salinas Valley,36.4244,-121.3260`,
+      
+      "Santa Maria Valley": `Name,County,Total Population,Latino Population,Latino Percentage,Region,Lat,Lng
+Guadalupe,Santa Barbara,8057,7098,88.10,Santa Maria Valley,34.9714,-120.5732
+Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.4357`
+    };
+    
+    // Enhanced list of California city coordinates (already included in CSV above)
+    const cityCoordinates = {};
+    
+    // Global variables
+    let view;
+    let graphicsLayer;
+    let communities = [];
+    let regionGroups = {};
+    let currentFilter = 'all';
+    let currentRegionFilter = 'all';
+    let selectedCommunity = null;
+    let geocodeCache = {}; // Added geocodeCache as a global variable
+    let maxPopulation = 0; // Track maximum population for proportional scaling
+    let regionTotals = {}; // Track population totals by region
+    
+    // Embedded CSV data - these will be populated from the embedded data
+    // Format is region key: array of community objects
+    let communityData = {
+      "Central Valley": [],
+      "Coachella Valley": [],
+      "Imperial Valley": [],
+      "Salinas Valley": [],
+      "Santa Maria Valley": []
+    };
+    
+    // Load geocode cache from localStorage with improved error handling
+    let storedGeoCache = {};
+    try {
+      debugLog("Attempting to load geocode cache from localStorage...");
+      const cachedCoordinates = localStorage.getItem('latinoFarmworkerMapGeoCache');
+      
+      if (cachedCoordinates) {
+        try {
+          // Parse the JSON data
+          const parsedCache = JSON.parse(cachedCoordinates);
+          
+          // Validate that it's an object with expected format
+          if (typeof parsedCache === 'object' && parsedCache !== null) {
+            storedGeoCache = parsedCache;
+            const cityCount = Object.keys(storedGeoCache).length;
+            debugLog(`Successfully loaded ${cityCount} cached coordinates from localStorage`);
+            
+            // Log a few examples to verify format
+            const sampleCities = Object.keys(storedGeoCache).slice(0, 3);
+            sampleCities.forEach(city => {
+              debugLog(`Sample: ${city} => [${storedGeoCache[city]}]`);
+            });
+          } else {
+            debugLog("WARNING: Cached coordinates not in expected format, ignoring cache");
+          }
+        } catch (parseError) {
+          debugLog(`Error parsing cached coordinates: ${parseError.message}`);
+          // Clear corrupted cache
+          localStorage.removeItem('latinoFarmworkerMapGeoCache');
+        }
+      } else {
+        debugLog("No geocode cache found in localStorage");
+      }
+    } catch (e) {
+      debugLog(`Error accessing localStorage: ${e.message}`);
+    }
+    
+    // Function to reset the geocode cache
+    function resetGeocodeCache() {
+      try {
+        localStorage.removeItem('latinoFarmworkerMapGeoCache');
+        debugLog("Geocode cache reset successfully");
+        return true;
+      } catch (e) {
+        debugLog(`Error resetting geocode cache: ${e.message}`);
+        return false;
+      }
+    }
+    
+    // Function to validate if coordinates are within California
+    function isValidCaliforniaCoordinate(coordinates) {
+      // Rough bounding box for California
+      const [lon, lat] = coordinates;
+      return (
+        lon >= -124.5 && lon <= -114.0 && // Longitude bounds for California
+        lat >= 32.5 && lat <= 42.0        // Latitude bounds for California
+      );
+    }
+    
+    // Function to bulk clear existing invalid coordinates
+    function cleanupInvalidCachedCoordinates() {
+      let removedCount = 0;
+      
+      debugLog("Checking cached coordinates for validity...");
+      
+      for (const city in geocodeCache) {
+        const coords = geocodeCache[city];
+        if (!isValidCaliforniaCoordinate(coords)) {
+          debugLog(`Removing invalid coordinates for ${city}: [${coords}]`);
+          delete geocodeCache[city];
+          removedCount++;
+        }
+      }
+      
+      if (removedCount > 0) {
+        debugLog(`Removed ${removedCount} invalid coordinates from cache`);
+        saveGeocodeCache();
+      } else {
+        debugLog("No invalid coordinates found in cache");
+      }
+    }
+    
+    // Function to save geocode cache to localStorage with improved error handling
+    function saveGeocodeCache() {
+      try {
+        // Only save if we actually have coordinates to save
+        if (geocodeCache && Object.keys(geocodeCache).length > 0) {
+          // Convert to JSON
+          const cacheJson = JSON.stringify(geocodeCache);
+          
+          // Sanity check the size (localStorage has limits)
+          if (cacheJson.length > 5000000) {
+            debugLog("WARNING: Geocode cache too large for localStorage, trimming...");
+            // If needed, implement trimming logic here
+          }
+          
+          // Save to localStorage
+          localStorage.setItem('latinoFarmworkerMapGeoCache', cacheJson);
+          debugLog(`Saved ${Object.keys(geocodeCache).length} coordinates to localStorage`);
+        } else {
+          debugLog("No geocode data to save to localStorage");
+        }
+      } catch (e) {
+        debugLog(`Error saving coordinates cache: ${e.message}`);
+      }
+    }
+    
+    // Function to format population numbers
+    function formatPopulation(value) {
+      if (value >= 1000000) {
+        return `${(value / 1000000).toFixed(1)}M`;
+      } else if (value >= 1000) {
+        return `${(value / 1000).toFixed(1)}K`;
+      }
+      return `${value}`;
+    }
+    
+    // Get marker size based on Latino percentage
+    function getMarkerSize(percentage) {
+      if (percentage > 95) return 24;
+      if (percentage > 90) return 20;
+      if (percentage > 85) return 16;
+      return 12;
+    }
+    
+    // Get region for a community
+    function getCommunityRegion(community) {
+      return community.Region || "Unknown";
+    }
+    
+    // Get color for a community based on region
+    function getRegionColor(region) {
+      return regionTypes[region]?.color || [128, 128, 128, 0.8]; // Default gray
+    }
+    
+    // Function to update statistics panel
+    function updateStatisticsPanel() {
+      const regionBreakdownDiv = document.getElementById("regionBreakdown");
+      const populationBreakdownDiv = document.getElementById("populationBreakdown");
+      
+      // Clear existing content
+      regionBreakdownDiv.innerHTML = "<h4>Communities by Region</h4>";
+      populationBreakdownDiv.innerHTML = "<h4>Latino Population by Region</h4>";
+      
+      // Count communities and population by region
+      const regionStats = {};
+      let totalCommunities = 0;
+      let totalPopulation = 0;
+      let totalLatinoPopulation = 0;
+      
+      for (const region in regionTypes) {
+        regionStats[region] = {
+          count: 0,
+          population: 0,
+          latinoPopulation: 0
+        };
+      }
+      
+      communities.forEach(community => {
+        const region = community.Region;
+        const population = parseInt(community["Total Population"]) || 0;
+        const latinoPopulation = parseInt(community["Latino Population"]) || 0;
+        
+        if (regionStats[region]) {
+          regionStats[region].count++;
+          regionStats[region].population += population;
+          regionStats[region].latinoPopulation += latinoPopulation;
+        }
+        
+        totalCommunities++;
+        totalPopulation += population;
+        totalLatinoPopulation += latinoPopulation;
+      });
+      
+      // Display community count statistics
+      for (const region in regionStats) {
+        if (regionStats[region].count > 0) {
+          const regionInfo = regionTypes[region];
+          const percentage = ((regionStats[region].count / totalCommunities) * 100).toFixed(1);
+          const rgbColor = `rgb(${regionInfo.color[0]}, ${regionInfo.color[1]}, ${regionInfo.color[2]})`;
+          
+          const regionItem = document.createElement("div");
+          regionItem.className = "population-stat";
+          regionItem.innerHTML = `
+            <span class="region-indicator" style="background-color: ${rgbColor};"></span>
+            ${regionInfo.name}: ${regionStats[region].count} communities (${percentage}%)
+          `;
+          regionBreakdownDiv.appendChild(regionItem);
+        }
+      }
+      
+      // Display population statistics
+      for (const region in regionStats) {
+        if (regionStats[region].latinoPopulation > 0) {
+          const regionInfo = regionTypes[region];
+          const percentage = ((regionStats[region].latinoPopulation / totalLatinoPopulation) * 100).toFixed(1);
+          const latinoPercentage = ((regionStats[region].latinoPopulation / regionStats[region].population) * 100).toFixed(1);
+          const rgbColor = `rgb(${regionInfo.color[0]}, ${regionInfo.color[1]}, ${regionInfo.color[2]})`;
+          
+          const populationItem = document.createElement("div");
+          populationItem.className = "population-stat";
+          populationItem.innerHTML = `
+            <span class="region-indicator" style="background-color: ${rgbColor};"></span>
+            ${regionInfo.name}: ${formatPopulation(regionStats[region].latinoPopulation)} (${latinoPercentage}% Latino)
+          `;
+          populationBreakdownDiv.appendChild(populationItem);
+        }
+      }
+    }
+    
+    // Function to get GitHub URL for a CSV file
+    function getGitHubUrl(baseFileName) {
+      return githubBaseUrl + baseFileName;
+    }
+
+    // Function to load CSV from a string
+    function loadCSVFromString(csvString, region) {
+      return new Promise((resolve, reject) => {
+        try {
+          // Use PapaParse to parse the CSV string
+          Papa.parse(csvString, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+              // Add region if not already present
+              const typedData = results.data.map(community => ({
+                ...community,
+                Region: community.Region || region
+              }));
+              resolve(typedData);
+            },
+            error: function(error) {
+              reject(error);
+            }
+          });
+        } catch (error) {
+          reject(error);
+        }
+      });
+    }
+    
+    // Function to load CSV from GitHub
+    function loadCSVFromGitHub(region) {
+      const csvUrl = getGitHubUrl(regionTypes[region].csvBase);
+      debugLog(`Attempting to fetch: ${csvUrl}`);
+      
+      return fetch(csvUrl)
+        .then(response => {
+          debugLog(`Response for ${region}: status=${response.status}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error ${response.status} for ${region} CSV`);
+          }
+          return response.text();
+        })
+        .then(csvText => {
+          debugLog(`Received CSV text for ${region}, length: ${csvText.length} chars`);
+          
+          // Return the parsed CSV data
+          return new Promise((resolve, reject) => {
+            Papa.parse(csvText, {
+              header: true,
+              skipEmptyLines: true,
+              complete: function(results) {
+                // Add region if not already present
+                const typedData = results.data.map(community => ({
+                  ...community,
+                  Region: community.Region || region
+                }));
+                debugLog(`Successfully parsed ${typedData.length} communities for ${region}`);
+                resolve(typedData);
+              },
+              error: function(error) {
+                debugLog(`Error parsing CSV for ${region}: ${error}`);
+                reject(error);
+              }
+            });
+          });
+        })
+        .catch(error => {
+          debugLog(`Error loading ${region} data from GitHub: ${error.message}`);
+          debugLog(`Falling back to static data for ${region}`);
+          
+          // Fallback to static data
+          if (csvData[region]) {
+            return loadCSVFromString(csvData[region], region);
+          } else {
+            return [];
+          }
+        });
+    }
+    
+    // Function to load all CSV data
+    async function loadAllCSVData() {
+      try {
+        // Show loading overlay
+        document.getElementById("loadingOverlay").style.display = "flex";
+        document.getElementById("loadingOverlay").querySelector(".loading-text").textContent = "Loading communities data...";
+        
+        let allCommunities = [];
+        let loadedRegions = 0;
+        const totalRegions = Object.keys(regionTypes).length;
+        
+        // Process each region
+        for (const region in regionTypes) {
+          try {
+            document.getElementById("loadingOverlay").querySelector(".loading-text").textContent = 
+              `Loading ${regionTypes[region].name}...`;
+            
+            // Update progress
+            const progress = (loadedRegions / totalRegions) * 100;
+            document.getElementById("progressBar").style.width = `${progress}%`;
+            
+            let communitiesData = [];
+            
+            if (useStaticData) {
+              // Load from static embedded data
+              if (csvData[region]) {
+                communitiesData = await loadCSVFromString(csvData[region], region);
+                debugLog(`Loaded ${communitiesData.length} communities from static ${region} data`);
+              } else {
+                debugLog(`No static CSV data found for ${region}`);
+              }
+            } else {
+              // Try loading from GitHub
+              try {
+                communitiesData = await loadCSVFromGitHub(region);
+                debugLog(`Loaded ${communitiesData.length} communities from GitHub ${region} data`);
+              } catch (error) {
+                debugLog(`Error loading ${region} data from GitHub: ${error.message}`);
+                // Fallback to static data
+                if (csvData[region]) {
+                  communitiesData = await loadCSVFromString(csvData[region], region);
+                  debugLog(`Loaded ${communitiesData.length} communities from static ${region} data (fallback)`);
+                }
+              }
+            }
+            
+            communityData[region] = communitiesData;
+            allCommunities = allCommunities.concat(communitiesData);
+            loadedRegions++;
+            
+          } catch (error) {
+            debugLog(`Error loading ${region} data: ${error.message}`);
+          }
+        }
+        
+        // Update progress to 100%
+        document.getElementById("progressBar").style.width = "100%";
+        
+        // Combine all data
+        communities = allCommunities;
+        
+        debugLog(`Loaded ${communities.length} communities from all data sources`);
+        
+        // Process all the communities
+        await processCommunities();
+      } catch (error) {
+        debugLog(`Error loading CSV data: ${error.message}`);
+        document.getElementById("loadingOverlay").style.display = "none";
+      }
+    }
+    
+    // Process communities function with improved debugging
+    async function processCommunities() {
+      try {
+        // Group communities by region
+        regionGroups = {};
+        let totalLatinoPop = 0;
+        let totalCommunitiesCount = 0;
+        maxPopulation = 0;
+        
+        debugLog(`Processing ${communities.length} communities...`);
+        
+        // Check if communities is valid
+        if (!Array.isArray(communities)) {
+          debugLog(`ERROR: communities is not an array. Type: ${typeof communities}`);
+          if (typeof communities === 'object') {
+            debugLog(`communities keys: ${Object.keys(communities).join(', ')}`);
+          }
+          return;
+        }
+        
+        // Reset region totals
+        regionTotals = {};
+        for (const region in regionTypes) {
+          regionTotals[region] = 0;
+        }
+        
+        communities.forEach((community, index) => {
+          // Check if community has valid data
+          if (!community || !community.Name || !community.Region) {
+            debugLog(`Skipping invalid community at index ${index}: ${JSON.stringify(community)}`);
+            return;
+          }
+          
+          const name = community.Name.trim();
+          const population = parseInt(community["Total Population"]) || 0;
+          const latinoPopulation = parseInt(community["Latino Population"]) || 0;
+          const region = community.Region;
+          
+          if (isNaN(population) || isNaN(latinoPopulation)) {
+            debugLog(`Warning: Invalid population format for ${community.Name}: Pop=${community["Total Population"]}, Latino=${community["Latino Population"]}`);
+          }
+          
+          totalCommunitiesCount++;
+          totalLatinoPop += latinoPopulation;
+          
+          // Update max population if this is larger
+          if (population > maxPopulation) {
+            maxPopulation = population;
+          }
+          
+          // Update region totals
+          if (regionTotals[region] !== undefined) {
+            regionTotals[region] += latinoPopulation;
+          }
+          
+          if (index < 5 || index > communities.length - 6) {
+            // Log a few at the beginning and end to avoid flooding
+            debugLog(`Processing community: ${name} - ${latinoPopulation} Latino residents (${community["Latino Percentage"]}%)`);
+          } else if (index === 5 && communities.length > 10) {
+            debugLog(`... (${communities.length - 10} more communities) ...`);
+          }
+          
+          if (!regionGroups[region]) {
+            regionGroups[region] = {
+              region: region,
+              count: 0,
+              totalPopulation: 0,
+              latinoPopulation: 0,
+              communities: []
+            };
+          }
+          
+          regionGroups[region].count++;
+          regionGroups[region].totalPopulation += population;
+          regionGroups[region].latinoPopulation += latinoPopulation;
+          regionGroups[region].communities.push(community);
+        });
+        
+        // Update statistics
+        document.getElementById("communityCount").textContent = totalCommunitiesCount;
+        document.getElementById("regionCount").textContent = Object.keys(regionGroups).length;
+        document.getElementById("totalPopulation").textContent = formatPopulation(totalLatinoPop);
+        
+        // Update statistics panel
+        updateStatisticsPanel();
+        
+        debugLog(`Found ${totalCommunitiesCount} communities with total Latino population of ${formatPopulation(totalLatinoPop)}`);
+        debugLog(`Number of regions: ${Object.keys(regionGroups).length}`);
+      } catch (error) {
+        debugLog(`Error in processCommunities: ${error.message}`);
+        console.error(error);
+      }
+    }
+    
+    // Use the AMD pattern as recommended by ArcGIS
+    require([
+      "esri/Map", 
+      "esri/views/MapView",
+      "esri/Graphic",
+      "esri/layers/GraphicsLayer",
+      "esri/geometry/Point",
+      "esri/widgets/BasemapToggle",
+      "esri/widgets/Home",
+      "esri/geometry/Extent"
+    ], function(ArcGISMap, MapView, Graphic, GraphicsLayer, Point, BasemapToggle, Home, Extent) {
+      
+      debugLog("ArcGIS modules loaded successfully");
+      
+      try {
+        // Initialize the geocodeCache with provided data
+        for (const community of Object.values(csvData).flatMap(csv => 
+          Papa.parse(csv, { header: true, skipEmptyLines: true }).data
+        )) {
+          if (community.Name && community.Lat && community.Lng) {
+            geocodeCache[community.Name] = [parseFloat(community.Lng), parseFloat(community.Lat)];
+          }
+        }
+        
+        // Merge with stored cache
+        geocodeCache = {...geocodeCache, ...storedGeoCache};
+        
+        // Updated geocodeCity function using fetch with Nominatim API
+        async function geocodeCity(cityName, state = "CA") {
+          // Check cache first
+          if (geocodeCache[cityName]) {
+            // Validate cached coordinates
+            const coords = geocodeCache[cityName];
+            if (isValidCaliforniaCoordinate(coords)) {
+              debugLog(`Using cached coordinates for ${cityName}: [${coords}]`);
+              return coords;
+            } else {
+              debugLog(`Found invalid cached coordinates for ${cityName}: [${coords}], re-geocoding`);
+              // If invalid, continue to geocode
+            }
+          }
+          
+          debugLog(`Geocoding city: ${cityName}, ${state}`);
+          
+          try {
+            // Use OpenStreetMap's Nominatim service
+            const encodedCity = encodeURIComponent(cityName);
+            const encodedState = encodeURIComponent(state);
+            
+            const url = `https://nominatim.openstreetmap.org/search?city=${encodedCity}&state=${encodedState}&country=USA&format=json`;
+            
+            // Important: Add a small delay to respect rate limits
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const response = await fetch(url, {
+              headers: {
+                // It's good practice to add a user agent when using Nominatim
+                'User-Agent': 'CaliforniaLatinoFarmworkerMap/1.0'
+              }
+            });
+            
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+              // Get longitude and latitude from first result
+              const coords = [parseFloat(data[0].lon), parseFloat(data[0].lat)];
+              
+              // Validate coordinates to make sure they're in California
+              if (isValidCaliforniaCoordinate(coords)) {
+                debugLog(`Successfully geocoded ${cityName}: [${coords}]`);
+                
+                // Save to cache
+                geocodeCache[cityName] = coords;
+                saveGeocodeCache();
+                
+                return coords;
+              } else {
+                debugLog(`Nominatim returned coordinates outside California for ${cityName}: [${coords}]`);
+                return null;
+              }
+            } else {
+              debugLog(`No geocoding results for: ${cityName}, ${state}`);
+              return null;
+            }
+          } catch (error) {
+            debugLog(`Geocoding error for ${cityName}: ${error.message}`);
+            return null;
+          }
+        }
+        
+        // Create map with basemap
+        const esriMap = new ArcGISMap({
+          basemap: "topo-vector"
+        });
+        
+        // Create graphics layer for communities with explicit visibility settings
+        graphicsLayer = new GraphicsLayer({
+          visible: true,  // Explicitly set to visible
+          opacity: 1,     // Full opacity
+          title: "Latino Communities"  // Give it a title for easier identification
+        });
+        
+        // Add it to the map and ensure it's added successfully
+        esriMap.add(graphicsLayer);
+        debugLog(`Added graphics layer to map: ${graphicsLayer.id}`);
+        
+        // Create the map view
+        view = new MapView({
+          container: "viewDiv",
+          map: esriMap,
+          center: [-119.4179, 36.7783], // Center on California
+          zoom: 6
+        });
+        
+        // Add basemap toggle
+        const basemapToggle = new BasemapToggle({
+          view: view,
+          nextBasemap: "satellite"
+        });
+        view.ui.add(basemapToggle, "bottom-right");
+        
+        // Define California extent
+        const caExtent = new Extent({
+          xmin: -124.4096,
+          ymin: 32.5343,
+          xmax: -114.1308,
+          ymax: 42.0095,
+          spatialReference: {
+            wkid: 4326
+          }
+        });
+        
+        // Add home widget
+        const homeWidget = new Home({
+          view: view,
+          viewpoint: {
+            targetGeometry: caExtent
+          }
+        });
+        view.ui.add(homeWidget, "top-left");
+        
+        // Create a popup template for marker clicks
+        const popupTemplate = {
+          title: "{name}",
+          content: [
+            {
+              type: "text",
+              text: "{latinoPopulation} Latino residents ({latinoPercentage}% of total population)"
+            }
+          ]
+        };
+        
+        // Function to check graphics layer visibility
+        function checkGraphicsLayerVisibility() {
+          debugLog("Checking graphics layer visibility...");
+          
+          // Check if the layer exists
+          if (!graphicsLayer) {
+            debugLog("ERROR: Graphics layer is not defined");
+            return false;
+          }
+          
+          // Check visibility property
+          debugLog(`Graphics layer visibility: ${graphicsLayer.visible}`);
+          
+          // Check if it has any graphics
+          debugLog(`Graphics layer has ${graphicsLayer.graphics.length} graphics`);
+          
+          // Check if it's in the map's layers
+          const isInMap = esriMap.layers.some(layer => layer === graphicsLayer);
+          debugLog(`Graphics layer is ${isInMap ? '' : 'NOT '} in the map`);
+          
+          // Ensure it's visible and in the map
+          if (!graphicsLayer.visible) {
+            debugLog("Setting graphics layer to visible");
+            graphicsLayer.visible = true;
+          }
+          
+          if (!isInMap) {
+            debugLog("Re-adding graphics layer to map");
+            esriMap.add(graphicsLayer);
+          }
+          
+          return true;
+        }
+        
+        // Function to filter graphics based on Latino percentage and region
+        function filterGraphics() {
+          graphicsLayer.graphics.forEach(graphic => {
+            const latinoPercentage = graphic.attributes.latinoPercentage;
+            const region = graphic.attributes.region;
+            
+            let percentageMatch = false;
+            let regionMatch = false;
+            
+            // Check percentage filters
+            if (currentFilter === 'all') {
+              percentageMatch = true;
+            } else if (currentFilter === 'high' && latinoPercentage >= 95) {
+              percentageMatch = true;
+            } else if (currentFilter === 'med' && latinoPercentage >= 85 && latinoPercentage < 95) {
+              percentageMatch = true;
+            } else if (currentFilter === 'low' && latinoPercentage < 85) {
+              percentageMatch = true;
+            }
+            
+            // Check region filters
+            if (currentRegionFilter === 'all') {
+              regionMatch = true;
+            } else {
+              regionMatch = (region === currentRegionFilter);
+            }
+            
+            // Only show if both filters match
+            graphic.visible = percentageMatch && regionMatch;
+          });
+        }
+        
+        // Function to update info panel with communities data
+        function updateInfoPanel(communityName = null) {
+          const communitiesListElement = document.getElementById("communitiesList");
+          communitiesListElement.innerHTML = "";
+          
+          let displayCommunities = [];
+          
+          if (communityName) {
+            // Selected community view
+            document.getElementById("selectedCommunity").textContent = `${communityName}, CA`;
+            displayCommunities = communities.filter(c => c.Name === communityName);
+            
+            // Add back button
+            const backButton = document.createElement("button");
+            backButton.textContent = "Back to All Communities";
+            backButton.className = "action-btn";
+            backButton.onclick = function() {
+              selectedCommunity = null;
+              updateInfoPanel();
+              view.goTo(caExtent);
+            };
+            communitiesListElement.appendChild(backButton);
+          } else {
+            // All communities view
+            document.getElementById("selectedCommunity").textContent = "";
+            
+            // Group by region and create region list
+            for (const region in regionGroups) {
+              const regionInfo = regionGroups[region];
+              
+              // Apply percentage filter
+              if (currentFilter === 'low' && regionInfo.latinoPercentage >= 85) continue;
+              if (currentFilter === 'med' && (regionInfo.latinoPercentage < 85 || regionInfo.latinoPercentage >= 95)) continue;
+              if (currentFilter === 'high' && regionInfo.latinoPercentage < 95) continue;
+              
+              // Apply region filter
+              if (currentRegionFilter !== 'all' && region !== currentRegionFilter) continue;
+              
+              const regionItem = document.createElement("div");
+              regionItem.className = "community-item";
+              
+              // Calculate Latino percentage for the region
+              const regionLatinoPercentage = (regionInfo.latinoPopulation / regionInfo.totalPopulation * 100).toFixed(1);
+              
+              regionItem.innerHTML = `
+                <div class="community-name">${region}</div>
+                <div>${regionInfo.count} communities</div>
+                <div>${formatPopulation(regionInfo.latinoPopulation)} Latino residents (${regionLatinoPercentage}%)</div>
+              `;
+              
+              // Add click event to expand region
+              regionItem.style.cursor = "pointer";
+              regionItem.onclick = function() {
+                // Toggle expanded state for this region
+                const expandedRegions = document.querySelectorAll(".region-expanded");
+                expandedRegions.forEach(el => {
+                  if (el.dataset.region !== region) {
+                    el.remove();
+                  }
+                });
+                
+                const existing = document.querySelector(`.region-expanded[data-region="${region}"]`);
+                if (existing) {
+                  existing.remove();
+                } else {
+                  // Create expanded view
+                  const expandedRegion = document.createElement("div");
+                  expandedRegion.className = "region-expanded";
+                  expandedRegion.dataset.region = region;
+                  expandedRegion.style.marginLeft = "15px";
+                  expandedRegion.style.borderLeft = "2px solid #0079c1";
+                  expandedRegion.style.paddingLeft = "10px";
+                  
+                  // Add communities for this region
+                  const regionCommunities = regionInfo.communities.sort((a, b) => 
+                    parseFloat(b["Latino Percentage"]) - parseFloat(a["Latino Percentage"])
+                  );
+                  
+                  regionCommunities.forEach(community => {
+                    const communityDiv = document.createElement("div");
+                    communityDiv.className = "community-item";
+                    communityDiv.style.cursor = "pointer";
+                    communityDiv.innerHTML = `
+                      <div>${community.Name}</div>
+                      <div>${formatPopulation(community["Latino Population"])} Latino (${community["Latino Percentage"]}%)</div>
+                    `;
+                    
+                    // Add click to zoom to community
+                    communityDiv.onclick = function(e) {
+                      e.stopPropagation(); // Prevent region collapse
+                      selectedCommunity = community.Name;
+                      updateInfoPanel(community.Name);
+                      
+                      // Zoom to community
+                      if (geocodeCache[community.Name]) {
+                        const point = new Point({
+                          longitude: geocodeCache[community.Name][0],
+                          latitude: geocodeCache[community.Name][1]
+                        });
+                        view.goTo({
+                          target: point,
+                          zoom: 12
+                        });
+                      }
+                    };
+                    
+                    expandedRegion.appendChild(communityDiv);
+                  });
+                  
+                  // Insert after the region item
+                  regionItem.parentNode.insertBefore(expandedRegion, regionItem.nextSibling);
+                }
+              };
+              
+              communitiesListElement.appendChild(regionItem);
+            }
+            
+            return;
+          }
+          
+          // Display selected community details
+          if (displayCommunities.length > 0) {
+            const community = displayCommunities[0];
+            
+            const detailsDiv = document.createElement("div");
+            detailsDiv.style.marginBottom = "15px";
+            
+            // Get region color
+            const regionColor = getRegionColor(community.Region);
+            const rgbColor = `rgb(${regionColor[0]}, ${regionColor[1]}, ${regionColor[2]})`;
+            
+            detailsDiv.innerHTML = `
+              <div style="margin-bottom: 8px;">
+                <span class="region-indicator" style="background-color: ${rgbColor};"></span>
+                <span style="font-weight: bold;">${community.Region}</span>
+              </div>
+              <div><strong>County:</strong> ${community.County}</div>
+              <div><strong>Total Population:</strong> ${formatPopulation(community["Total Population"])}</div>
+              <div><strong>Latino Population:</strong> ${formatPopulation(community["Latino Population"])}</div>
+              <div><strong>Latino Percentage:</strong> ${community["Latino Percentage"]}%</div>
+            `;
+            
+            communitiesListElement.appendChild(detailsDiv);
+            
+            // Show nearby communities
+            const nearbyHeader = document.createElement("div");
+            nearbyHeader.style.fontWeight = "bold";
+            nearbyHeader.style.marginTop = "20px";
+            nearbyHeader.style.marginBottom = "10px";
+            nearbyHeader.textContent = "Nearby Communities";
+            communitiesListElement.appendChild(nearbyHeader);
+            
+            // Find communities in the same region
+            const sameBreadcrumb = communities
+              .filter(c => c.Region === community.Region && c.Name !== community.Name)
+              .sort((a, b) => parseFloat(b["Latino Percentage"]) - parseFloat(a["Latino Percentage"]))
+              .slice(0, 5); // Show top 5
+            
+            if (sameBreadcrumb.length === 0) {
+              const noNearby = document.createElement("div");
+              noNearby.textContent = "No other communities found in this region.";
+              communitiesListElement.appendChild(noNearby);
+            } else {
+              sameBreadcrumb.forEach(nearby => {
+                const nearbyItem = document.createElement("div");
+                nearbyItem.className = "community-item";
+                nearbyItem.style.cursor = "pointer";
+                nearbyItem.innerHTML = `
+                  <div>${nearby.Name}</div>
+                  <div>${formatPopulation(nearby["Latino Population"])} Latino (${nearby["Latino Percentage"]}%)</div>
+                `;
+                
+                // Add click to switch to this community
+                nearbyItem.onclick = function() {
+                  selectedCommunity = nearby.Name;
+                  updateInfoPanel(nearby.Name);
+                  
+                  // Zoom to community
+                  if (geocodeCache[nearby.Name]) {
+                    const point = new Point({
+                      longitude: geocodeCache[nearby.Name][0],
+                      latitude: geocodeCache[nearby.Name][1]
+                    });
+                    view.goTo({
+                      target: point,
+                      zoom: 12
+                    });
+                  }
+                };
+                
+                communitiesListElement.appendChild(nearbyItem);
+              });
+            }
+          }
+        }
+        
+        // Function to create community markers based on processed data
+        async function createCommunityMarkers() {
+          try {
+            // Create markers for each community
+            const communitiesList = communities;
+            
+            debugLog(`Starting to create markers for ${communitiesList.length} communities...`);
+            
+            // Process communities with a delay to avoid rate limiting
+            let markersCreated = 0;
+            
+            for (let i = 0; i < communitiesList.length; i++) {
+              const community = communitiesList[i];
+              
+              if (i < 3 || i > communitiesList.length - 4) {
+                // Log only a few communities to avoid flooding debug panel
+                debugLog(`Processing community ${i+1}/${communitiesList.length}: ${community.Name} with ${community["Latino Percentage"]}% Latino population`);
+              } else if (i === 3 && communitiesList.length > 6) {
+                debugLog(`... (${communitiesList.length - 6} more communities) ...`);
+              }
+              
+              // Get coordinates from community
+              let coordinates;
+              
+              if (community.Lat && community.Lng) {
+                coordinates = [parseFloat(community.Lng), parseFloat(community.Lat)];
+                geocodeCache[community.Name] = coordinates;
+              } else if (geocodeCache[community.Name]) {
+                coordinates = geocodeCache[community.Name];
+              } else {
+                debugLog(`No cached coordinates for ${community.Name}, attempting geocoding...`);
+                coordinates = await geocodeCity(community.Name);
+                // Add small delay between geocoding requests
+                if (i < communitiesList.length - 1) {
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                }
+              }
+              
+              if (coordinates) {
+                const [longitude, latitude] = coordinates;
+                
+                // Create point
+                const point = new Point({
+                  longitude: longitude,
+                  latitude: latitude
+                });
+                
+                // Get region for this community
+                const region = community.Region;
+                
+                // Get color based on region
+                const markerColor = getRegionColor(region);
+                
+                // Get size based on Latino percentage
+                const percentage = parseFloat(community["Latino Percentage"]);
+                
+                // Create marker symbol
+                const markerSymbol = {
+                  type: "simple-marker",
+                  size: getMarkerSize(percentage),
+                  color: markerColor,
+                  outline: {
+                    color: [255, 255, 255],
+                    width: 2
+                  }
+                };
+                
+                try {
+                  // Create graphic
+                  const graphic = new Graphic({
+                    geometry: point,
+                    symbol: markerSymbol,
+                    attributes: {
+                      name: community.Name,
+                      region: region,
+                      county: community.County,
+                      totalPopulation: parseInt(community["Total Population"]) || 0,
+                      latinoPopulation: parseInt(community["Latino Population"]) || 0,
+                      latinoPercentage: parseFloat(community["Latino Percentage"]) || 0
+                    },
+                    popupTemplate: popupTemplate
+                  });
+                  
+                  // Add to graphics layer
+                  graphicsLayer.add(graphic);
+                  markersCreated++;
+                  
+                  if (i < 3 || i > communitiesList.length - 4 || i === communitiesList.length-1) {
+                    debugLog(`Added marker for ${community.Name} with ${community["Latino Percentage"]}% Latino population`);
+                  }
+                } catch (error) {
+                  debugLog(`Error creating graphic for ${community.Name}: ${error.message}`);
+                }
+              } else {
+                debugLog(`Could not get coordinates for community: ${community.Name}`);
+              }
+              
+              // Update progress bar
+              const progressPercent = ((i + 1) / communitiesList.length) * 100;
+              document.getElementById("progressBar").style.width = `${progressPercent}%`;
+            }
+            
+            debugLog(`Created ${markersCreated} markers out of ${communitiesList.length} communities`);
+            debugLog(`Graphics layer has ${graphicsLayer.graphics.length} graphics`);
+            
+            // Save the complete geocode cache
+            saveGeocodeCache();
+            
+            // Check graphics layer visibility after adding markers
+            checkGraphicsLayerVisibility();
+            
+            // Hide loading overlay
+            document.getElementById("loadingOverlay").style.display = "none";
+            
+            return markersCreated;
+          } catch (error) {
+            debugLog(`Error creating community markers: ${error.message}`);
+            // Hide loading overlay even on error
+            document.getElementById("loadingOverlay").style.display = "none";
+            return 0;
+          }
+        }
+        
+        // Extend processCommunities to also create markers
+        async function processAndDisplayCommunities() {
+          try {
+            // Process community data
+            await processCommunities();
+            
+            // Create community markers based on the processed data
+            const markersCreated = await createCommunityMarkers();
+            
+            // Update info panel
+            updateInfoPanel();
+            
+            return markersCreated;
+          } catch (error) {
+            debugLog(`Error in processAndDisplayCommunities: ${error.message}`);
+            document.getElementById("loadingOverlay").style.display = "none";
+            return 0;
+          }
+        }
+        
+        // Set up click handler for graphics
+        view.on("click", function(event) {
+          view.hitTest(event).then(function(response) {
+            const graphic = response.results.find(result => {
+              return result.graphic.layer === graphicsLayer;
+            });
+            
+            if (graphic) {
+              const communityName = graphic.graphic.attributes.name;
+              selectedCommunity = communityName;
+              updateInfoPanel(communityName);
+            }
+          });
+        });
+        
+        // Helper function to set active filter button
+        function setActiveFilterButton(button, buttonGroup) {
+          const buttons = buttonGroup || document.querySelectorAll(".filter-btn");
+          buttons.forEach(btn => {
+            btn.classList.remove("active");
+          });
+          button.classList.add("active");
+        }
+        
+        // Set up event handlers for UI controls
+        function setupEventHandlers() {
+          // Handle filter buttons - Latino percentage
+          document.getElementById("filterAll").addEventListener("click", function() {
+            currentFilter = 'all';
+            setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(2) .filter-btn"));
+            filterGraphics();
+            updateInfoPanel(selectedCommunity);
+          });
+          
+          document.getElementById("filterHigh").addEventListener("click", function() {
+            currentFilter = 'high';
+            setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(2) .filter-btn"));
+            filterGraphics();
+            updateInfoPanel(selectedCommunity);
+          });
+          
+          document.getElementById("filterMed").addEventListener("click", function() {
+            currentFilter = 'med';
+            setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(2) .filter-btn"));
+            filterGraphics();
+            updateInfoPanel(selectedCommunity);
+          });
+          
+          document.getElementById("filterLow").addEventListener("click", function() {
+            currentFilter = 'low';
+            setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(2) .filter-btn"));
+            filterGraphics();
+            updateInfoPanel(selectedCommunity);
+          });
+          
+          // Handle filter buttons - Regions
+          document.getElementById("filterAllRegions").addEventListener("click", function() {
+            currentRegionFilter = 'all';
+            setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
+            filterGraphics();
+            updateInfoPanel(selectedCommunity);
+          });
+          
+          document.getElementById("filterCentralValley").addEventListener("click", function() {
+            currentRegionFilter = 'Central Valley';
+            setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
+            filterGraphics();
+            updateInfoPanel(selectedCommunity);
+          });
+          
+          document.getElementById("filterCoachella").addEventListener("click", function() {
+            currentRegionFilter = 'Coachella Valley';
+            setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
+            filterGraphics();
+            updateInfoPanel(selectedCommunity);
+          });
+          
+          document.getElementById("filterImperial").addEventListener("click", function() {
+            currentRegionFilter = 'Imperial Valley';
+            setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
+            filterGraphics();
+            updateInfoPanel(selectedCommunity);
+          });
+          
+          document.getElementById("filterSalinas").addEventListener("click", function() {
+            currentRegionFilter = 'Salinas Valley';
+            setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
+            filterGraphics();
+            updateInfoPanel(selectedCommunity);
+          });
+          
+          document.getElementById("filterSantaMaria").addEventListener("click", function() {
+            currentRegionFilter = 'Santa Maria Valley';
+            setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
+            filterGraphics();
+            updateInfoPanel(selectedCommunity);
+          });
+          
+          // Reset view button
+          document.getElementById("resetViewBtn").addEventListener("click", function() {
+            view.goTo(caExtent);
+            selectedCommunity = null;
+            updateInfoPanel();
+          });
+          
+          // Reset cache button
+          document.getElementById("resetCacheBtn").addEventListener("click", function() {
+            if (confirm("This will reset your geocode cache. Continue?")) {
+              if (resetGeocodeCache()) {
+                alert("Geocache reset. Reloading the map...");
+                location.reload();
+              }
+            }
+          });
+          
+          // Minimize/expand debug panel
+          document.getElementById("minimizeDebugBtn").addEventListener("click", function() {
+            const debugPanel = document.getElementById("debugPanel");
+            const btn = document.getElementById("minimizeDebugBtn");
+            
+            if (debugPanel.classList.contains("minimized")) {
+              // Expand
+              debugPanel.classList.remove("minimized");
+              btn.textContent = "−"; // Minus sign
+            } else {
+              // Minimize
+              debugPanel.classList.add("minimized");
+              btn.textContent = "+"; // Plus sign
+            }
+          });
+          
+          // Setup search functionality
+          setupSearchFunctionality();
+        }
+        
+        // Set up search functionality
+        function setupSearchFunctionality() {
+          const searchInput = document.getElementById("communitySearchInput");
+          const searchBtn = document.getElementById("communitySearchBtn");
+          
+          // Search function
+          function performSearch() {
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            
+            if (searchTerm.length < 2) {
+              alert("Please enter at least 2 characters to search");
+              return;
+            }
+            
+            // Clear existing search results
+            const existingResults = document.querySelector(".search-results");
+            if (existingResults) {
+              existingResults.remove();
+            }
+            
+            // Find matching communities
+            const matchingCommunities = communities.filter(community => 
+              community.Name.toLowerCase().includes(searchTerm) ||
+              (community.County && community.County.toLowerCase().includes(searchTerm)) ||
+              (community.Region && community.Region.toLowerCase().includes(searchTerm))
+            );
+            
+            // Create results element
+            const resultsDiv = document.createElement("div");
+            resultsDiv.className = "search-results";
+            
+            // Show results count
+            const countDiv = document.createElement("div");
+            countDiv.className = "search-result-count";
+            countDiv.textContent = `Found ${matchingCommunities.length} matching communities`;
+            resultsDiv.appendChild(countDiv);
+            
+            // If no results
+            if (matchingCommunities.length === 0) {
+              const noResults = document.createElement("div");
+              noResults.textContent = "No communities found matching your search.";
+              resultsDiv.appendChild(noResults);
+            } else {
+              // Sort by Latino percentage (highest first)
+              matchingCommunities.sort((a, b) => parseFloat(b["Latino Percentage"]) - parseFloat(a["Latino Percentage"]));
+              
+              // Add results (limit to 10 for performance)
+              const limit = Math.min(matchingCommunities.length, 10);
+              for (let i = 0; i < limit; i++) {
+                const community = matchingCommunities[i];
+                const communityItem = document.createElement("div");
+                communityItem.className = "community-item";
+                
+                // Get color for region
+                const regionColor = getRegionColor(community.Region);
+                const rgbColor = `rgb(${regionColor[0]}, ${regionColor[1]}, ${regionColor[2]})`;
+                
+                // Highlight search term
+                let communityName = community.Name;
+                if (communityName.toLowerCase().includes(searchTerm)) {
+                  const index = communityName.toLowerCase().indexOf(searchTerm);
+                  communityName = 
+                    communityName.substring(0, index) + 
+                    `<span class="highlight">${communityName.substring(index, index + searchTerm.length)}</span>` + 
+                    communityName.substring(index + searchTerm.length);
+                }
+                
+                // Include region indicator
+                const regionIndicator = `<span class="region-indicator" style="background-color: ${rgbColor};"></span>`;
+                
+                communityItem.innerHTML = `
+                  <div class="community-name">${regionIndicator}${communityName}</div>
+                  <div>${community.County} County, ${community.Region}</div>
+                  <div>${community["Latino Percentage"]}% Latino population</div>
+                `;
+                
+                // Make clickable to zoom to community
+                communityItem.style.cursor = "pointer";
+                communityItem.onclick = function() {
+                  // Zoom to community
+                  if (geocodeCache[community.Name]) {
+                    const point = new Point({
+                      longitude: geocodeCache[community.Name][0],
+                      latitude: geocodeCache[community.Name][1]
+                    });
+                    
+                    view.goTo({
+                      target: point,
+                      zoom: 12
+                    }, { duration: 1000 });
+                    
+                    // Update info panel for this community
+                    selectedCommunity = community.Name;
+                    updateInfoPanel(community.Name);
+                  }
+                };
+                
+                resultsDiv.appendChild(communityItem);
+              }
+              
+              // Add "Show more" link if there are more than 10 results
+              if (matchingCommunities.length > 10) {
+                const showMoreLink = document.createElement("div");
+                showMoreLink.style.textAlign = "center";
+                showMoreLink.style.marginTop = "10px";
+                showMoreLink.innerHTML = `<a href="#" style="color: #0079c1;">Show all ${matchingCommunities.length} results</a>`;
+                
+                showMoreLink.onclick = function(e) {
+                  e.preventDefault();
+                  
+                  // Remove limit and show all results
+                  resultsDiv.removeChild(showMoreLink);
+                  
+                  for (let i = 10; i < matchingCommunities.length; i++) {
+                    const community = matchingCommunities[i];
+                    const communityItem = document.createElement("div");
+                    communityItem.className = "community-item";
+                    
+                    // Get color for region
+                    const regionColor = getRegionColor(community.Region);
+                    const rgbColor = `rgb(${regionColor[0]}, ${regionColor[1]}, ${regionColor[2]})`;
+                    
+                    // Highlight search term
+                    let communityName = community.Name;
+                    if (communityName.toLowerCase().includes(searchTerm)) {
+                      const index = communityName.toLowerCase().indexOf(searchTerm);
+                      communityName = 
+                        communityName.substring(0, index) + 
+                        `<span class="highlight">${communityName.substring(index, index + searchTerm.length)}</span>` + 
+                        communityName.substring(index + searchTerm.length);
+                    }
+                    
+                    // Include region indicator
+                    const regionIndicator = `<span class="region-indicator" style="background-color: ${rgbColor};"></span>`;
+                    
+                    communityItem.innerHTML = `
+                      <div class="community-name">${regionIndicator}${communityName}</div>
+                      <div>${community.County} County, ${community.Region}</div>
+                      <div>${community["Latino Percentage"]}% Latino population</div>
+                    `;
+                    
+                    // Make clickable to zoom to community
+                    communityItem.style.cursor = "pointer";
+                    communityItem.onclick = function() {
+                      // Zoom to community
+                      if (geocodeCache[community.Name]) {
+                        const point = new Point({
+                          longitude: geocodeCache[community.Name][0],
+                          latitude: geocodeCache[community.Name][1]
+                        });
+                        
+                        view.goTo({
+                          target: point,
+                          zoom: 12
+                        }, { duration: 1000 });
+                        
+                        // Update info panel for this community
+                        selectedCommunity = community.Name;
+                        updateInfoPanel(community.Name);
+                      }
+                    };
+                    
+                    resultsDiv.appendChild(communityItem);
+                  }
+                };
+                
+                resultsDiv.appendChild(showMoreLink);
+              }
+            }
+            
+            // Insert results after search container
+            const searchContainer = document.querySelector(".search-container");
+            searchContainer.parentNode.insertBefore(resultsDiv, searchContainer.nextSibling);
+          }
+          
+          // Add event listener for search button
+          searchBtn.addEventListener("click", performSearch);
+          
+          // Add event listener for Enter key
+          searchInput.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+              performSearch();
+            }
+          });
+        }
+        
+        // Initialize the application when view is ready
+        view.when(function() {
+          debugLog("Map view initialized");
+          
+          // Check for invalid coordinates before processing
+          cleanupInvalidCachedCoordinates();
+          
+          // Set up event handlers
+          setupEventHandlers();
+          
+          // Load the CSV data and display communities
+          loadAllCSVData()
+            .then(() => createCommunityMarkers())
+            .then(() => {
+              // Update info panel after all data is loaded and markers are created
+              updateInfoPanel();
+              debugLog("Map initialization complete");
+            })
+            .catch(error => {
+              debugLog(`Error initializing map data: ${error.message}`);
+              document.getElementById("loadingOverlay").style.display = "none";
+            });
+        });
+      } catch (error) {
+        debugLog(`Error initializing map: ${error.message}`);
+        console.error(error);
+        
+        // Hide loading overlay on critical error
+        document.getElementById("loadingOverlay").style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
