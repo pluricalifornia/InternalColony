@@ -1,14 +1,13 @@
 NAME,P9_001N,P9_002N,HISPANIC_PCT
-California,39538223,15579652,39.4
-"Acalanes Ridge, California",1285,107,8.33
-"Acampo, California",334,191,57.19
-"Acton, California",7431,2076,27.94
-"Adelanto, California",38046,24158,63.5
-"Adin, California",205,10,4.88
-"Agoura Hills, California",20299,2319,11.42
-"Agua Dulce, California",3451,868,25.15
-"Aguanga, California",989,210,21.23
-"Ahwahnee, California",2296,262,11.41
+"Acalanes Ridge",1285,107,8.33
+"Acampo",334,191,57.19
+"Acton",7431,2076,27.94
+"Adelanto",38046,24158,63.5
+"Adin",205,10,4.88
+"Agoura Hills",20299,2319,11.42
+"Agua Dulce",3451,868,25.15
+"Aguanga",989,210,21.23
+"Ahwahnee",2296,262,11.41
 "Airport, California",1389,976,70.27
 "Alameda, California",78280,9435,12.05
 "Alamo, California",15314,1115,7.28
@@ -186,9 +185,9 @@ California,39538223,15579652,39.4
 "Cabazon, California",2629,1400,53.25
 "Calabasas, California",23241,1954,8.41
 "Calexico, California",38633,37548,97.19
-"California City, California",14973,5494,36.69
-"California Hot Springs, California",50,2,4.0
-"California Pines, California",473,74,15.64
+"California City",14973,5494,36.69
+"California Hot Springs",50,2,4.0
+"California Pines",473,74,15.64
 "Calimesa, California",10026,2894,28.86
 "Calipatria, California",6515,4960,76.13
 "Calistoga, California",5228,2698,51.61
