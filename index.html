@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>California Latino Farmworker Communities Map</title>
+  <title>California Latino Communities Map</title>
   
   <!-- Load the ArcGIS Maps SDK for JavaScript core API -->
   <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css"/>
@@ -281,7 +281,7 @@
       font-size: 0.9em;
     }
     
-    .region-indicator {
+    .indicator {
       display: inline-block;
       width: 12px;
       height: 12px;
@@ -380,7 +380,7 @@
     }
     
     .size-label {
-      width: 50px;
+      width: 40px;
       text-align: center;
     }
     
@@ -406,6 +406,18 @@
       width: 0%;
       transition: width 0.3s ease;
     }
+    
+    #percentageFilterContainer {
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+    }
+    
+    #percentageSlider {
+      width: 100%;
+      margin: 10px 0;
+    }
   </style>
 </head>
 
@@ -414,7 +426,7 @@
   
   <div id="infoPanel">
     <div class="title-bar">
-      <h2 style="margin: 0; font-size: 1.2em;">California Latino Farmworker Communities</h2>
+      <h2 style="margin: 0; font-size: 1.2em;">California Latino Communities</h2>
     </div>
 
     <div class="search-container">
@@ -428,8 +440,8 @@
         <div class="stat-label">Communities</div>
       </div>
       <div class="stat-box">
-        <div class="stat-value" id="regionCount">0</div>
-        <div class="stat-label">Regions</div>
+        <div class="stat-value" id="countyCount">0</div>
+        <div class="stat-label">Counties</div>
       </div>
       <div class="stat-box">
         <div class="stat-value" id="totalPopulation">0</div>
@@ -444,27 +456,30 @@
     
     <div id="filterTab" class="tab-content active">
       <div class="filter-group">
-        <div class="filter-label">Region:</div>
-        <button id="filterAllRegions" class="filter-btn active">All Regions</button>
-        <button id="filterCentralValley" class="filter-btn">Central Valley</button>
-        <button id="filterCoachella" class="filter-btn">Coachella Valley</button>
-        <button id="filterImperial" class="filter-btn">Imperial Valley</button>
-        <button id="filterSalinas" class="filter-btn">Salinas Valley</button>
-        <button id="filterSantaMaria" class="filter-btn">Santa Maria Valley</button>
-        <button id="filterOther" class="filter-btn">Other</button>
+        <div class="filter-label">Latino Population %:</div>
+        <button id="filterAll" class="filter-btn active">All</button>
+        <button id="filterHigh" class="filter-btn">&gt; 90%</button>
+        <button id="filterMed" class="filter-btn">75-90%</button>
+        <button id="filterLow" class="filter-btn">50-75%</button>
+        <button id="filterVeryLow" class="filter-btn">&lt; 50%</button>
+      </div>
+      
+      <div id="percentageFilterContainer">
+        <div class="filter-label">Minimum Latino Percentage: <span id="percentageValue">0%</span></div>
+        <input type="range" id="percentageSlider" min="0" max="100" value="0">
       </div>
       
       <div class="filter-group">
-        <div class="filter-label">Latino Population:</div>
-        <button id="filterAll" class="filter-btn active">All</button>
-        <button id="filterHigh" class="filter-btn">&gt; 95%</button>
-        <button id="filterMed" class="filter-btn">85-95%</button>
-        <button id="filterLow" class="filter-btn">&lt; 85%</button>
+        <div class="filter-label">Population Size:</div>
+        <button id="filterAllSizes" class="filter-btn active">All Sizes</button>
+        <button id="filterLarge" class="filter-btn">&gt; 25,000</button>
+        <button id="filterMedium" class="filter-btn">5,000-25,000</button>
+        <button id="filterSmall" class="filter-btn">&lt; 5,000</button>
       </div>
     </div>
     
     <div id="statsTab" class="tab-content">
-      <div id="regionBreakdown"></div>
+      <div id="countyBreakdown"></div>
       <div id="populationBreakdown"></div>
     </div>
     
@@ -476,45 +491,45 @@
     <h3 style="margin-top: 0; margin-bottom: 10px;">Legend</h3>
     
     <div class="legend-section">
-      <h4 style="margin: 10px 0;">Agricultural Regions</h4>
+      <h4 style="margin: 10px 0;">Latino Population Percentage</h4>
       <div class="legend-item">
-        <div class="legend-color" style="background-color: #8BC34A;"></div>
-        <div class="legend-text">Central Valley</div>
+        <div class="legend-color" style="background-color: rgb(255, 0, 0);"></div>
+        <div class="legend-text">90% and above</div>
       </div>
       <div class="legend-item">
-        <div class="legend-color" style="background-color: #FF5722;"></div>
-        <div class="legend-text">Coachella Valley</div>
+        <div class="legend-color" style="background-color: rgb(255, 127, 0);"></div>
+        <div class="legend-text">75% - 90%</div>
       </div>
       <div class="legend-item">
-        <div class="legend-color" style="background-color: #FFC107;"></div>
-        <div class="legend-text">Imperial Valley</div>
+        <div class="legend-color" style="background-color: rgb(255, 255, 0);"></div>
+        <div class="legend-text">50% - 75%</div>
       </div>
       <div class="legend-item">
-        <div class="legend-color" style="background-color: #2196F3;"></div>
-        <div class="legend-text">Salinas Valley</div>
+        <div class="legend-color" style="background-color: rgb(127, 255, 0);"></div>
+        <div class="legend-text">25% - 50%</div>
       </div>
       <div class="legend-item">
-        <div class="legend-color" style="background-color: #9C27B0;"></div>
-        <div class="legend-text">Santa Maria Valley</div>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color" style="background-color: #808080;"></div>
-        <div class="legend-text">Other</div>
+        <div class="legend-color" style="background-color: rgb(0, 255, 0);"></div>
+        <div class="legend-text">Below 25%</div>
       </div>
     </div>
     
     <div class="size-legend">
       <div>
-        <div style="margin-bottom: 10px; font-weight: bold;">Latino Population %</div>
+        <div style="margin-bottom: 10px; font-weight: bold;">Latino Population Size</div>
         <div class="size-circles">
+          <div class="size-circle" style="width: 30px; height: 30px;"></div>
           <div class="size-circle" style="width: 24px; height: 24px;"></div>
+          <div class="size-circle" style="width: 20px; height: 20px;"></div>
           <div class="size-circle" style="width: 16px; height: 16px;"></div>
-          <div class="size-circle" style="width: 10px; height: 10px;"></div>
+          <div class="size-circle" style="width: 12px; height: 12px;"></div>
         </div>
         <div class="size-labels">
-          <div class="size-label">&gt;95%</div>
-          <div class="size-label">85-95%</div>
-          <div class="size-label">&lt;85%</div>
+          <div class="size-label">50k+</div>
+          <div class="size-label">25k+</div>
+          <div class="size-label">10k+</div>
+          <div class="size-label">5k+</div>
+          <div class="size-label">1k+</div>
         </div>
       </div>
     </div>
@@ -572,35 +587,7 @@
       console.log(message);
     }
     
-    // Define agricultural regions and their colors
-    const regionTypes = {
-      "Central Valley": {
-        name: "Central Valley",
-        color: [139, 195, 74, 0.8], // #8BC34A
-      },
-      "Coachella Valley": {
-        name: "Coachella Valley",
-        color: [255, 87, 34, 0.8], // #FF5722
-      },
-      "Imperial Valley": {
-        name: "Imperial Valley",
-        color: [255, 193, 7, 0.8], // #FFC107
-      },
-      "Salinas Valley": {
-        name: "Salinas Valley",
-        color: [33, 150, 243, 0.8], // #2196F3
-      },
-      "Santa Maria Valley": {
-        name: "Santa Maria Valley",
-        color: [156, 39, 176, 0.8], // #9C27B0
-      },
-      "Other": {
-        name: "Other",
-        color: [128, 128, 128, 0.8], // #808080 (Gray)
-      }
-    };
-    
-    // Path to the actual CSV file
+    // Path to the CSV file
     const csvFilePath = "data/latino_census_percentage.csv";
     
     // Flag to control using static data vs CSV data
@@ -645,19 +632,18 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
     let view;
     let graphicsLayer;
     let communities = [];
-    let regionGroups = {};
+    let countyGroups = {};
     let currentFilter = 'all';
-    let currentRegionFilter = 'all';
+    let currentSizeFilter = 'all';
     let selectedCommunity = null;
     let geocodeCache = {}; // Cache for geocoding results
     let maxPopulation = 0; // Track maximum population for proportional scaling
-    let regionTotals = {}; // Track population totals by region
     
     // Load geocode cache from localStorage with improved error handling
     let storedGeoCache = {};
     try {
       debugLog("Attempting to load geocode cache from localStorage...");
-      const cachedCoordinates = localStorage.getItem('latinoFarmworkerMapGeoCache');
+      const cachedCoordinates = localStorage.getItem('latinoCommunitiesMapGeoCache');
       
       if (cachedCoordinates) {
         try {
@@ -681,7 +667,7 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
         } catch (parseError) {
           debugLog(`Error parsing cached coordinates: ${parseError.message}`);
           // Clear corrupted cache
-          localStorage.removeItem('latinoFarmworkerMapGeoCache');
+          localStorage.removeItem('latinoCommunitiesMapGeoCache');
         }
       } else {
         debugLog("No geocode cache found in localStorage");
@@ -693,7 +679,7 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
     // Function to reset the geocode cache
     function resetGeocodeCache() {
       try {
-        localStorage.removeItem('latinoFarmworkerMapGeoCache');
+        localStorage.removeItem('latinoCommunitiesMapGeoCache');
         debugLog("Geocode cache reset successfully");
         return true;
       } catch (e) {
@@ -750,7 +736,7 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
           }
           
           // Save to localStorage
-          localStorage.setItem('latinoFarmworkerMapGeoCache', cacheJson);
+          localStorage.setItem('latinoCommunitiesMapGeoCache', cacheJson);
           debugLog(`Saved ${Object.keys(geocodeCache).length} coordinates to localStorage`);
         } else {
           debugLog("No geocode data to save to localStorage");
@@ -758,130 +744,6 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
       } catch (e) {
         debugLog(`Error saving coordinates cache: ${e.message}`);
       }
-    }
-    
-    // Function to determine region based on coordinates
-    function determineRegionByCoordinates(lat, lng) {
-      // Define approximate bounding boxes for each agricultural region
-      // Format: [min_lng, min_lat, max_lng, max_lat]
-      const regionBounds = {
-        "Central Valley": [-121.5, 35.0, -118.5, 37.5],
-        "Coachella Valley": [-116.5, 33.4, -115.9, 33.9],
-        "Imperial Valley": [-116.0, 32.5, -114.5, 33.5],
-        "Salinas Valley": [-121.8, 36.0, -121.0, 36.8],
-        "Santa Maria Valley": [-120.6, 34.8, -120.2, 35.1]
-      };
-      
-      // Check if coordinates fall within any region's bounds
-      for (const region in regionBounds) {
-        const bounds = regionBounds[region];
-        if (lng >= bounds[0] && lat >= bounds[1] && lng <= bounds[2] && lat <= bounds[3]) {
-          return region;
-        }
-      }
-      
-      // Known cities and their regions
-      const knownCities = {
-        "Mendota": "Central Valley",
-        "Parlier": "Central Valley",
-        "Huron": "Central Valley",
-        "San Joaquin": "Central Valley",
-        "Orange Cove": "Central Valley",
-        "Firebaugh": "Central Valley",
-        "Cutler": "Central Valley",
-        "Earlimart": "Central Valley",
-        "Woodville": "Central Valley",
-        "Dinuba": "Central Valley",
-        "McFarland": "Central Valley",
-        "Arvin": "Central Valley",
-        "Mecca": "Coachella Valley",
-        "Coachella": "Coachella Valley",
-        "Thermal": "Coachella Valley",
-        "Calexico": "Imperial Valley",
-        "Greenfield": "Salinas Valley",
-        "Gonzales": "Salinas Valley",
-        "King City": "Salinas Valley",
-        "Soledad": "Salinas Valley",
-        "Guadalupe": "Santa Maria Valley",
-        "Santa Maria": "Santa Maria Valley"
-      };
-      
-      // Check the city name in the known cities
-      for (const city in knownCities) {
-        if (city === selectedCommunity) {
-          return knownCities[city];
-        }
-      }
-      
-      // Default to "Other" if the region can't be determined
-      return "Other";
-    }
-    
-    // Function to process CSV data with the format we need
-    function processLatinoCensusData(csvData) {
-      const processedData = [];
-      
-      // Keep track of existing communities for deduplication
-      const existingCommunities = new Set();
-      
-      // Process each row in the CSV
-      csvData.forEach(row => {
-        // Skip rows with missing data
-        if (!row.NAME || !row.P9_001N || !row.P9_002N || !row.HISPANIC_PCT) {
-          return;
-        }
-        
-        // Skip rows that aren't places (like counties or census tracts)
-        if (!row.NAME.includes(", CA") || row.NAME.includes(" County")) {
-          return;
-        }
-        
-        // Extract the place name (removing ", CA" if present)
-        const name = row.NAME.replace(", CA", "");
-        
-        // Skip if we've already processed this community
-        if (existingCommunities.has(name)) {
-          return;
-        }
-        
-        // Parse population values
-        const totalPopulation = parseInt(row.P9_001N) || 0;
-        const latinoPopulation = parseInt(row.P9_002N) || 0;
-        
-        // Calculate Latino percentage (use HISPANIC_PCT or calculate if missing)
-        const latinoPercentage = parseFloat(row.HISPANIC_PCT || (latinoPopulation / totalPopulation * 100).toFixed(2));
-        
-        // Only include places with Latino population > 75%
-        if (latinoPercentage < 75) {
-          return;
-        }
-        
-        // Determine county (if possible)
-        let county = "";
-        if (row.NAME && row.NAME.includes(",")) {
-          // Try to extract county from full name if available
-          const parts = row.NAME.split(",");
-          if (parts.length > 1) {
-            county = parts[1].replace(" CA", "").trim();
-          }
-        }
-        
-        // Create the community object
-        const community = {
-          "Name": name,
-          "County": county,
-          "Total Population": totalPopulation.toString(),
-          "Latino Population": latinoPopulation.toString(),
-          "Latino Percentage": latinoPercentage.toString(),
-          "Region": "Unassigned" // Will be assigned based on coordinates later
-        };
-        
-        // Add to processed data
-        processedData.push(community);
-        existingCommunities.add(name);
-      });
-      
-      return processedData;
     }
     
     // Function to format population numbers
@@ -894,96 +756,133 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
       return `${value}`;
     }
     
-    // Get marker size based on Latino percentage
-    function getMarkerSize(percentage) {
-      if (percentage > 95) return 24;
-      if (percentage > 90) return 20;
-      if (percentage > 85) return 16;
-      return 12;
+    // Get marker size based on Latino population
+    function getMarkerSize(latinoPopulation) {
+      // Use absolute population numbers for marker sizes
+      const population = parseInt(latinoPopulation);
+      if (population > 50000) return 30;
+      if (population > 25000) return 24;
+      if (population > 10000) return 20;
+      if (population > 5000) return 16;
+      if (population > 1000) return 12;
+      return 8;
     }
     
-    // Get region for a community
-    function getCommunityRegion(community) {
-      return community.Region || "Other";
-    }
-    
-    // Get color for a community based on region
-    function getRegionColor(region) {
-      return regionTypes[region]?.color || [128, 128, 128, 0.8]; // Default gray
+    // Get color based on Latino percentage
+    function getPercentageColor(latinoPercentage) {
+      // Color gradient from green (low %) to red (high %)
+      const percentage = parseFloat(latinoPercentage);
+      if (percentage >= 90) return [255, 0, 0, 0.8]; // Red for very high percentage
+      if (percentage >= 75) return [255, 127, 0, 0.8]; // Orange for high percentage
+      if (percentage >= 50) return [255, 255, 0, 0.8]; // Yellow for medium percentage
+      if (percentage >= 25) return [127, 255, 0, 0.8]; // Yellow-green for low percentage
+      return [0, 255, 0, 0.8]; // Green for very low percentage
     }
     
     // Function to update statistics panel
     function updateStatisticsPanel() {
-      const regionBreakdownDiv = document.getElementById("regionBreakdown");
+      const countyBreakdownDiv = document.getElementById("countyBreakdown");
       const populationBreakdownDiv = document.getElementById("populationBreakdown");
       
       // Clear existing content
-      regionBreakdownDiv.innerHTML = "<h4>Communities by Region</h4>";
-      populationBreakdownDiv.innerHTML = "<h4>Latino Population by Region</h4>";
+      countyBreakdownDiv.innerHTML = "<h4>Communities by County</h4>";
+      populationBreakdownDiv.innerHTML = "<h4>Latino Population by County</h4>";
       
-      // Count communities and population by region
-      const regionStats = {};
+      // Count communities and population by county
+      const countyStats = {};
       let totalCommunities = 0;
       let totalPopulation = 0;
-      let totalLatinoPopulation = 0;
-      
-      for (const region in regionTypes) {
-        regionStats[region] = {
-          count: 0,
-          population: 0,
-          latinoPopulation: 0
-        };
-      }
+      let totalLatinoPopulation =0;
       
       communities.forEach(community => {
-        const region = community.Region;
+        const county = community.County || "Unknown";
         const population = parseInt(community["Total Population"]) || 0;
         const latinoPopulation = parseInt(community["Latino Population"]) || 0;
         
-        if (regionStats[region]) {
-          regionStats[region].count++;
-          regionStats[region].population += population;
-          regionStats[region].latinoPopulation += latinoPopulation;
+        if (!countyStats[county]) {
+          countyStats[county] = {
+            count: 0,
+            population: 0,
+            latinoPopulation: 0
+          };
         }
+        
+        countyStats[county].count++;
+        countyStats[county].population += population;
+        countyStats[county].latinoPopulation += latinoPopulation;
         
         totalCommunities++;
         totalPopulation += population;
         totalLatinoPopulation += latinoPopulation;
       });
       
-      // Display community count statistics
-      for (const region in regionStats) {
-        if (regionStats[region].count > 0) {
-          const regionInfo = regionTypes[region];
-          const percentage = ((regionStats[region].count / totalCommunities) * 100).toFixed(1);
-          const rgbColor = `rgb(${regionInfo.color[0]}, ${regionInfo.color[1]}, ${regionInfo.color[2]})`;
-          
-          const regionItem = document.createElement("div");
-          regionItem.className = "population-stat";
-          regionItem.innerHTML = `
-            <span class="region-indicator" style="background-color: ${rgbColor};"></span>
-            ${regionInfo.name}: ${regionStats[region].count} communities (${percentage}%)
-          `;
-          regionBreakdownDiv.appendChild(regionItem);
-        }
-      }
+      // Update statistics
+      document.getElementById("communityCount").textContent = totalCommunities;
+      document.getElementById("countyCount").textContent = Object.keys(countyStats).length;
+      document.getElementById("totalPopulation").textContent = formatPopulation(totalLatinoPopulation);
       
-      // Display population statistics
-      for (const region in regionStats) {
-        if (regionStats[region].latinoPopulation > 0) {
-          const regionInfo = regionTypes[region];
-          const percentage = ((regionStats[region].latinoPopulation / totalLatinoPopulation) * 100).toFixed(1);
-          const latinoPercentage = ((regionStats[region].latinoPopulation / regionStats[region].population) * 100).toFixed(1);
-          const rgbColor = `rgb(${regionInfo.color[0]}, ${regionInfo.color[1]}, ${regionInfo.color[2]})`;
+      // Sort counties by Latino population (highest first)
+      const sortedCounties = Object.keys(countyStats).sort((a, b) => 
+        countyStats[b].latinoPopulation - countyStats[a].latinoPopulation
+      );
+      
+      // Display top 10 counties by Latino population
+      sortedCounties.slice(0, 10).forEach(county => {
+        if (countyStats[county].count > 0) {
+          const latinoPercentage = ((countyStats[county].latinoPopulation / countyStats[county].population) * 100).toFixed(1);
           
+          // Create county breakdown item
+          const countyItem = document.createElement("div");
+          countyItem.className = "population-stat";
+          countyItem.innerHTML = `
+            ${county}: ${countyStats[county].count} communities
+          `;
+          countyBreakdownDiv.appendChild(countyItem);
+          
+          // Create population breakdown item
           const populationItem = document.createElement("div");
           populationItem.className = "population-stat";
           populationItem.innerHTML = `
-            <span class="region-indicator" style="background-color: ${rgbColor};"></span>
-            ${regionInfo.name}: ${formatPopulation(regionStats[region].latinoPopulation)} (${latinoPercentage}% Latino)
+            ${county}: ${formatPopulation(countyStats[county].latinoPopulation)} (${latinoPercentage}% Latino)
           `;
           populationBreakdownDiv.appendChild(populationItem);
         }
+      });
+      
+      // Add "View More" button if there are more than 10 counties
+      if (sortedCounties.length > 10) {
+        const viewMoreBtn = document.createElement("button");
+        viewMoreBtn.className = "filter-btn";
+        viewMoreBtn.textContent = `View All ${sortedCounties.length} Counties`;
+        viewMoreBtn.style.marginTop = "10px";
+        viewMoreBtn.onclick = function() {
+          // Replace with full list
+          countyBreakdownDiv.innerHTML = "<h4>Communities by County</h4>";
+          populationBreakdownDiv.innerHTML = "<h4>Latino Population by County</h4>";
+          
+          sortedCounties.forEach(county => {
+            if (countyStats[county].count > 0) {
+              const latinoPercentage = ((countyStats[county].latinoPopulation / countyStats[county].population) * 100).toFixed(1);
+              
+              // Create county breakdown item
+              const countyItem = document.createElement("div");
+              countyItem.className = "population-stat";
+              countyItem.innerHTML = `
+                ${county}: ${countyStats[county].count} communities
+              `;
+              countyBreakdownDiv.appendChild(countyItem);
+              
+              // Create population breakdown item
+              const populationItem = document.createElement("div");
+              populationItem.className = "population-stat";
+              populationItem.innerHTML = `
+                ${county}: ${formatPopulation(countyStats[county].latinoPopulation)} (${latinoPercentage}% Latino)
+              `;
+              populationBreakdownDiv.appendChild(populationItem);
+            }
+          });
+        };
+        countyBreakdownDiv.appendChild(viewMoreBtn);
       }
     }
     
@@ -1037,6 +936,112 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
       }
     }
     
+    // Function to process CSV data with the format we need
+    function processLatinoCensusData(csvData) {
+      const processedData = [];
+      let totalRows = 0;
+      let skippedMissingData = 0;
+      let skippedNotPlace = 0;
+      let processedPlaces = 0;
+      
+      debugLog(`CSV has ${csvData.length} rows to process`);
+      
+      // Sample the first row to see column headers
+      if (csvData.length > 0) {
+        const headerSample = Object.keys(csvData[0]).join(', ');
+        debugLog(`CSV column headers: ${headerSample}`);
+      }
+      
+      // Process each row in the CSV
+      csvData.forEach(row => {
+        totalRows++;
+        
+        // For debugging the first few rows
+        if (totalRows <= 3) {
+          debugLog(`Sample row ${totalRows}: ${JSON.stringify(row)}`);
+        }
+        
+        // Get the place name from the NAME column
+        const placeName = row["NAME"];
+        if (!placeName) {
+          skippedMissingData++;
+          return;
+        }
+        
+        // Skip rows that aren't places (like counties or census tracts)
+        if (placeName.includes(" County")) {
+          skippedNotPlace++;
+          return;
+        }
+        
+        // Extract the clean place name (removing ", CA" if present)
+        let name = placeName;
+        if (name.includes(", CA")) {
+          name = name.replace(", CA", "");
+        }
+        
+        // Parse population values from the correct columns
+        const totalPopulation = parseInt(row["P9_001N"]) || 0;
+        const latinoPopulation = parseInt(row["P9_002N"]) || 0;
+        
+        // Skip if no population data
+        if (totalPopulation === 0) {
+          skippedMissingData++;
+          return;
+        }
+        
+        // Calculate Latino percentage
+        let latinoPercentage = 0;
+        if (totalPopulation > 0) {
+          // Try to use HISPANIC_PCT if available, otherwise calculate
+          if (row["HISPANIC_PCT"]) {
+            latinoPercentage = parseFloat(row["HISPANIC_PCT"]);
+          } else {
+            latinoPercentage = (latinoPopulation / totalPopulation * 100);
+          }
+        }
+        
+        // Format the percentage to 2 decimal places
+        const formattedPercentage = latinoPercentage.toFixed(2);
+        
+        // Determine county (if possible)
+        let county = "";
+        if (placeName && placeName.includes(",")) {
+          // Try to extract county from full name if available
+          const parts = placeName.split(",");
+          if (parts.length > 1) {
+            county = parts[1].replace(" CA", "").trim();
+          }
+        }
+        
+        // Create the community object
+        const community = {
+          "Name": name,
+          "County": county,
+          "Total Population": totalPopulation.toString(),
+          "Latino Population": latinoPopulation.toString(),
+          "Latino Percentage": formattedPercentage,
+          "Region": "California" // Simplified - all in California
+        };
+        
+        // Add to processed data
+        processedData.push(community);
+        processedPlaces++;
+        
+        // Log a few samples for debugging
+        if (processedPlaces <= 3) {
+          debugLog(`Processed community: ${name} - ${latinoPopulation} Latino residents (${formattedPercentage}%)`);
+        } else if (processedPlaces === 4) {
+          debugLog(`... (processing more communities) ...`);
+        }
+      });
+      
+      debugLog(`CSV processing stats: Total=${totalRows}, Processed=${processedData.length}, `+
+               `Skipped missing data=${skippedMissingData}, Not places=${skippedNotPlace}`);
+      
+      return processedData;
+    }
+    
     // Function to load the actual CSV file
     function loadCSVFromFile() {
       const csvUrl = csvFilePath;
@@ -1053,26 +1058,37 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
         .then(csvText => {
           debugLog(`Received CSV text, length: ${csvText.length} chars`);
           
-          // Parse the CSV
+          // Sample first few lines of CSV for debugging
+          const csvLines = csvText.split('\n').slice(0, 5);
+          debugLog(`CSV Sample (first ${csvLines.length} lines):`);
+          csvLines.forEach((line, index) => {
+            debugLog(`  Line ${index}: ${line.slice(0, 100)}${line.length > 100 ? '...' : ''}`);
+          });
+          
+          // Parse the CSV with proper configuration
           return new Promise((resolve, reject) => {
             Papa.parse(csvText, {
-              header: true,
+              header: true,       // First row is headers
+              dynamicTyping: true, // Convert numbers
               skipEmptyLines: true,
               complete: function(results) {
                 try {
-                  // Process the CSV data into the format needed by the application
+                  debugLog(`Papa Parse results: ${results.data.length} rows, ${results.errors.length} errors`);
+                  
+                  // Log any parsing errors
+                  if (results.errors.length > 0) {
+                    debugLog(`CSV parsing errors:`);
+                    results.errors.slice(0, 3).forEach(err => {
+                      debugLog(`  Row ${err.row}: ${err.message}`);
+                    });
+                    if (results.errors.length > 3) {
+                      debugLog(`  ... and ${results.errors.length - 3} more errors`);
+                    }
+                  }
+                  
+                  // Process the CSV data
                   const processedData = processLatinoCensusData(results.data);
                   debugLog(`Successfully parsed ${processedData.length} communities from CSV`);
-                  
-                  // Group the communities by region
-                  const communitiesByRegion = {};
-                  processedData.forEach(community => {
-                    const region = community.Region;
-                    if (!communitiesByRegion[region]) {
-                      communitiesByRegion[region] = [];
-                    }
-                    communitiesByRegion[region].push(community);
-                  });
                   
                   resolve(processedData);
                 } catch (error) {
@@ -1137,8 +1153,8 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
     // Process communities function with improved debugging
     async function processCommunities() {
       try {
-        // Group communities by region
-        regionGroups = {};
+        // Group communities by county
+        countyGroups = {};
         let totalLatinoPop = 0;
         let totalCommunitiesCount = 0;
         maxPopulation = 0;
@@ -1154,12 +1170,6 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
           return;
         }
         
-        // Reset region totals
-        regionTotals = {};
-        for (const region in regionTypes) {
-          regionTotals[region] = 0;
-        }
-        
         communities.forEach((community, index) => {
           // Check if community has valid data
           if (!community || !community.Name) {
@@ -1170,24 +1180,7 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
           const name = community.Name.trim();
           const population = parseInt(community["Total Population"]) || 0;
           const latinoPopulation = parseInt(community["Latino Population"]) || 0;
-          let region = community.Region;
-          
-          // If region is missing or "Unassigned", try to assign based on known cities
-          if (!region || region === "Unassigned") {
-            for (const knownCity in knownCities) {
-              if (name === knownCity) {
-                region = knownCities[knownCity];
-                community.Region = region;
-                break;
-              }
-            }
-            
-            // If still unassigned, mark as "Other"
-            if (!region || region === "Unassigned") {
-              region = "Other";
-              community.Region = region;
-            }
-          }
+          const county = community.County || "Unknown";
           
           if (isNaN(population) || isNaN(latinoPopulation)) {
             debugLog(`Warning: Invalid population format for ${community.Name}: Pop=${community["Total Population"]}, Latino=${community["Latino Population"]}`);
@@ -1197,13 +1190,8 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
           totalLatinoPop += latinoPopulation;
           
           // Update max population if this is larger
-          if (population > maxPopulation) {
-            maxPopulation = population;
-          }
-          
-          // Update region totals
-          if (regionTotals[region] !== undefined) {
-            regionTotals[region] += latinoPopulation;
+          if (latinoPopulation > maxPopulation) {
+            maxPopulation = latinoPopulation;
           }
           
           if (index < 5 || index > communities.length - 6) {
@@ -1213,9 +1201,9 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
             debugLog(`... (${communities.length - 10} more communities) ...`);
           }
           
-          if (!regionGroups[region]) {
-            regionGroups[region] = {
-              region: region,
+          if (!countyGroups[county]) {
+            countyGroups[county] = {
+              county: county,
               count: 0,
               totalPopulation: 0,
               latinoPopulation: 0,
@@ -1223,22 +1211,22 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
             };
           }
           
-          regionGroups[region].count++;
-          regionGroups[region].totalPopulation += population;
-          regionGroups[region].latinoPopulation += latinoPopulation;
-          regionGroups[region].communities.push(community);
+          countyGroups[county].count++;
+          countyGroups[county].totalPopulation += population;
+          countyGroups[county].latinoPopulation += latinoPopulation;
+          countyGroups[county].communities.push(community);
         });
         
         // Update statistics
         document.getElementById("communityCount").textContent = totalCommunitiesCount;
-        document.getElementById("regionCount").textContent = Object.keys(regionGroups).length;
+        document.getElementById("countyCount").textContent = Object.keys(countyGroups).length;
         document.getElementById("totalPopulation").textContent = formatPopulation(totalLatinoPop);
         
         // Update statistics panel
         updateStatisticsPanel();
         
         debugLog(`Found ${totalCommunitiesCount} communities with total Latino population of ${formatPopulation(totalLatinoPop)}`);
-        debugLog(`Number of regions: ${Object.keys(regionGroups).length}`);
+        debugLog(`Number of counties: ${Object.keys(countyGroups).length}`);
       } catch (error) {
         debugLog(`Error in processCommunities: ${error.message}`);
         console.error(error);
@@ -1275,7 +1263,7 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
         const response = await fetch(url, {
           headers: {
             // It's good practice to add a user agent when using Nominatim
-            'User-Agent': 'CaliforniaLatinoFarmworkerMap/1.0'
+            'User-Agent': 'CaliforniaLatinoCommunitiesMap/1.0'
           }
         });
         
@@ -1353,15 +1341,6 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
           if (coordinates) {
             const [longitude, latitude] = coordinates;
             
-            // If the region is "Unassigned", determine it based on coordinates
-            if (community.Region === "Unassigned" || community.Region === "Other") {
-              const detectedRegion = determineRegionByCoordinates(latitude, longitude);
-              if (detectedRegion !== "Other") {
-                community.Region = detectedRegion;
-                debugLog(`Assigned ${community.Name} to ${community.Region} based on coordinates`);
-              }
-            }
-            
             // Create point
             const point = {
               type: "point",
@@ -1369,23 +1348,24 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
               latitude: latitude
             };
             
-            // Get region for this community
-            const region = community.Region;
-            
-            // Get color based on region
-            const markerColor = getRegionColor(region);
-            
-            // Get size based on Latino percentage
+            // Get percentage for color
             const percentage = parseFloat(community["Latino Percentage"]);
+            
+            // Get color based on Latino percentage
+            const markerColor = getPercentageColor(percentage);
+            
+            // Get size based on Latino population
+            const latinoPopulation = parseInt(community["Latino Population"]);
+            const markerSize = getMarkerSize(latinoPopulation);
             
             // Create marker symbol
             const markerSymbol = {
               type: "simple-marker",
-              size: getMarkerSize(percentage),
+              size: markerSize,
               color: markerColor,
               outline: {
                 color: [255, 255, 255],
-                width: 2
+                width: 1
               }
             };
             
@@ -1396,11 +1376,10 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
                 symbol: markerSymbol,
                 attributes: {
                   name: community.Name,
-                  region: region,
                   county: community.County || "",
                   totalPopulation: parseInt(community["Total Population"]) || 0,
-                  latinoPopulation: parseInt(community["Latino Population"]) || 0,
-                  latinoPercentage: parseFloat(community["Latino Percentage"]) || 0
+                  latinoPopulation: latinoPopulation,
+                  latinoPercentage: percentage
                 },
                 popupTemplate: {
                   title: "{name}",
@@ -1473,35 +1452,44 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
       return true;
     }
     
-    // Function to filter graphics based on Latino percentage and region
+    // Function to filter graphics based on Latino percentage and population size
     function filterGraphics() {
+      // Get the minimum percentage filter value from the slider
+      const minPercentage = parseInt(document.getElementById("percentageSlider").value);
+      
       graphicsLayer.graphics.forEach(graphic => {
         const latinoPercentage = graphic.attributes.latinoPercentage;
-        const region = graphic.attributes.region;
+        const latinoPopulation = graphic.attributes.latinoPopulation;
         
         let percentageMatch = false;
-        let regionMatch = false;
+        let sizeMatch = false;
         
         // Check percentage filters
         if (currentFilter === 'all') {
+          percentageMatch = latinoPercentage >= minPercentage;
+        } else if (currentFilter === 'high' && latinoPercentage >= 90 && latinoPercentage >= minPercentage) {
           percentageMatch = true;
-        } else if (currentFilter === 'high' && latinoPercentage >= 95) {
+        } else if (currentFilter === 'med' && latinoPercentage >= 75 && latinoPercentage < 90 && latinoPercentage >= minPercentage) {
           percentageMatch = true;
-        } else if (currentFilter === 'med' && latinoPercentage >= 85 && latinoPercentage < 95) {
+        } else if (currentFilter === 'low' && latinoPercentage >= 50 && latinoPercentage < 75 && latinoPercentage >= minPercentage) {
           percentageMatch = true;
-        } else if (currentFilter === 'low' && latinoPercentage < 85) {
+        } else if (currentFilter === 'veryLow' && latinoPercentage < 50 && latinoPercentage >= minPercentage) {
           percentageMatch = true;
         }
         
-        // Check region filters
-        if (currentRegionFilter === 'all') {
-          regionMatch = true;
-        } else {
-          regionMatch = (region === currentRegionFilter);
+        // Check size filters
+        if (currentSizeFilter === 'all') {
+          sizeMatch = true;
+        } else if (currentSizeFilter === 'large' && latinoPopulation >= 25000) {
+          sizeMatch = true;
+        } else if (currentSizeFilter === 'medium' && latinoPopulation >= 5000 && latinoPopulation < 25000) {
+          sizeMatch = true;
+        } else if (currentSizeFilter === 'small' && latinoPopulation < 5000) {
+          sizeMatch = true;
         }
         
         // Only show if both filters match
-        graphic.visible = percentageMatch && regionMatch;
+        graphic.visible = percentageMatch && sizeMatch;
       });
     }
     
@@ -1525,7 +1513,8 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
           selectedCommunity = null;
           updateInfoPanel();
           view.goTo({
-            target: view.extent
+            center: [-119.4179, 36.7783],
+            zoom: 6
           });
         };
         communitiesListElement.appendChild(backButton);
@@ -1533,70 +1522,112 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
         // All communities view
         document.getElementById("selectedCommunity").textContent = "";
         
-        // Group by region and create region list
-        for (const region in regionGroups) {
-          const regionInfo = regionGroups[region];
+        // Group by county
+        const countySummary = {};
+        
+        communities.forEach(community => {
+          const county = community.County || "Unknown";
+          const latinoPercentage = parseFloat(community["Latino Percentage"]);
+          const latinoPopulation = parseInt(community["Latino Population"]);
           
-          // Apply percentage filter
-          if (currentFilter === 'low' && regionInfo.latinoPercentage >= 85) continue;
-          if (currentFilter === 'med' && (regionInfo.latinoPercentage < 85 || regionInfo.latinoPercentage >= 95)) continue;
-          if (currentFilter === 'high' && regionInfo.latinoPercentage < 95) continue;
+          // Apply percentage filter from slider
+          const minPercentage = parseInt(document.getElementById("percentageSlider").value);
+          if (latinoPercentage < minPercentage) {
+            return;
+          }
           
-          // Apply region filter
-          if (currentRegionFilter !== 'all' && region !== currentRegionFilter) continue;
+          // Apply percentage category filter
+          if (currentFilter === 'high' && latinoPercentage < 90) return;
+          if (currentFilter === 'med' && (latinoPercentage < 75 || latinoPercentage >= 90)) return;
+          if (currentFilter === 'low' && (latinoPercentage < 50 || latinoPercentage >= 75)) return;
+          if (currentFilter === 'veryLow' && latinoPercentage >= 50) return;
           
-          const regionItem = document.createElement("div");
-          regionItem.className = "community-item";
+          // Apply size filter
+          if (currentSizeFilter === 'large' && latinoPopulation < 25000) return;
+          if (currentSizeFilter === 'medium' && (latinoPopulation < 5000 || latinoPopulation >= 25000)) return;
+          if (currentSizeFilter === 'small' && latinoPopulation >= 5000) return;
           
-          // Calculate Latino percentage for the region
-          const regionLatinoPercentage = (regionInfo.latinoPopulation / regionInfo.totalPopulation * 100).toFixed(1);
+          if (!countySummary[county]) {
+            countySummary[county] = {
+              count: 0,
+              totalLatino: 0,
+              communities: []
+            };
+          }
           
-          regionItem.innerHTML = `
-            <div class="community-name">${region}</div>
-            <div>${regionInfo.count} communities</div>
-            <div>${formatPopulation(regionInfo.latinoPopulation)} Latino residents (${regionLatinoPercentage}%)</div>
+          countySummary[county].count++;
+          countySummary[county].totalLatino += latinoPopulation;
+          countySummary[county].communities.push(community);
+        });
+        
+        // Sort counties by total Latino population
+        const sortedCounties = Object.keys(countySummary).sort((a, b) => 
+          countySummary[b].totalLatino - countySummary[a].totalLatino
+        );
+        
+        // Create county list
+        sortedCounties.forEach(county => {
+          const countyInfo = countySummary[county];
+          
+          const countyItem = document.createElement("div");
+          countyItem.className = "community-item";
+          
+          countyItem.innerHTML = `
+            <div class="community-name">${county} County</div>
+            <div>${countyInfo.count} communities</div>
+            <div>${formatPopulation(countyInfo.totalLatino)} Latino residents</div>
           `;
           
-          // Add click event to expand region
-          regionItem.style.cursor = "pointer";
-          regionItem.onclick = function() {
-            // Toggle expanded state for this region
-            const expandedRegions = document.querySelectorAll(".region-expanded");
-            expandedRegions.forEach(el => {
-              if (el.dataset.region !== region) {
+          // Add click event to expand county
+          countyItem.style.cursor = "pointer";
+          countyItem.onclick = function() {
+            // Toggle expanded state for this county
+            const expandedCounties = document.querySelectorAll(".county-expanded");
+            expandedCounties.forEach(el => {
+              if (el.dataset.county !== county) {
                 el.remove();
               }
             });
             
-            const existing = document.querySelector(`.region-expanded[data-region="${region}"]`);
+            const existing = document.querySelector(`.county-expanded[data-county="${county}"]`);
             if (existing) {
               existing.remove();
             } else {
               // Create expanded view
-              const expandedRegion = document.createElement("div");
-              expandedRegion.className = "region-expanded";
-              expandedRegion.dataset.region = region;
-              expandedRegion.style.marginLeft = "15px";
-              expandedRegion.style.borderLeft = "2px solid #0079c1";
-              expandedRegion.style.paddingLeft = "10px";
+              const expandedCounty = document.createElement("div");
+              expandedCounty.className = "county-expanded";
+              expandedCounty.dataset.county = county;
+              expandedCounty.style.marginLeft = "15px";
+              expandedCounty.style.borderLeft = "2px solid #0079c1";
+              expandedCounty.style.paddingLeft = "10px";
               
-              // Add communities for this region
-              const regionCommunities = regionInfo.communities.sort((a, b) => 
+              // Sort communities by Latino percentage
+              const sortedCCommunities = countyInfo.communities.sort((a, b) => 
                 parseFloat(b["Latino Percentage"]) - parseFloat(a["Latino Percentage"])
               );
               
-              regionCommunities.forEach(community => {
+              // Add communities for this county
+              sortedCommunities.forEach(community => {
                 const communityDiv = document.createElement("div");
                 communityDiv.className = "community-item";
                 communityDiv.style.cursor = "pointer";
+                
+                // Get percentage for color
+                const percentage = parseFloat(community["Latino Percentage"]);
+                const percentageColor = getPercentageColor(percentage);
+                const rgbColor = `rgb(${percentageColor[0]}, ${percentageColor[1]}, ${percentageColor[2]})`;
+                
+                // Create indicator based on percentage
+                const indicator = `<span class="indicator" style="background-color: ${rgbColor};"></span>`;
+                
                 communityDiv.innerHTML = `
-                  <div>${community.Name}</div>
-                  <div>${formatPopulation(community["Latino Population"])} Latino (${community["Latino Percentage"]}%)</div>
+                  <div>${indicator}${community.Name}</div>
+                  <div>${formatPopulation(parseInt(community["Latino Population"]))} Latino (${community["Latino Percentage"]}%)</div>
                 `;
                 
                 // Add click to zoom to community
                 communityDiv.onclick = function(e) {
-                  e.stopPropagation(); // Prevent region collapse
+                  e.stopPropagation(); // Prevent county collapse
                   selectedCommunity = community.Name;
                   updateInfoPanel(community.Name);
                   
@@ -1614,16 +1645,16 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
                   }
                 };
                 
-                expandedRegion.appendChild(communityDiv);
+                expandedCounty.appendChild(communityDiv);
               });
               
-              // Insert after the region item
-              regionItem.parentNode.insertBefore(expandedRegion, regionItem.nextSibling);
+              // Insert after the county item
+              countyItem.parentNode.insertBefore(expandedCounty, countyItem.nextSibling);
             }
           };
           
-          communitiesListElement.appendChild(regionItem);
-        }
+          communitiesListElement.appendChild(countyItem);
+        });
         
         return;
       }
@@ -1635,16 +1666,16 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
         const detailsDiv = document.createElement("div");
         detailsDiv.style.marginBottom = "15px";
         
-        // Get region color
-        const regionColor = getRegionColor(community.Region);
-        const rgbColor = `rgb(${regionColor[0]}, ${regionColor[1]}, ${regionColor[2]})`;
+        // Get percentage color
+        const percentage = parseFloat(community["Latino Percentage"]);
+        const percentageColor = getPercentageColor(percentage);
+        const rgbColor = `rgb(${percentageColor[0]}, ${percentageColor[1]}, ${percentageColor[2]})`;
         
         detailsDiv.innerHTML = `
           <div style="margin-bottom: 8px;">
-            <span class="region-indicator" style="background-color: ${rgbColor};"></span>
-            <span style="font-weight: bold;">${community.Region}</span>
+            <span class="indicator" style="background-color: ${rgbColor};"></span>
+            <span style="font-weight: bold;">${community.County || "Unknown"} County</span>
           </div>
-          <div><strong>County:</strong> ${community.County || "Unknown"}</div>
           <div><strong>Total Population:</strong> ${formatPopulation(parseInt(community["Total Population"]))}</div>
           <div><strong>Latino Population:</strong> ${formatPopulation(parseInt(community["Latino Population"]))}</div>
           <div><strong>Latino Percentage:</strong> ${community["Latino Percentage"]}%</div>
@@ -1660,23 +1691,29 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
         nearbyHeader.textContent = "Nearby Communities";
         communitiesListElement.appendChild(nearbyHeader);
         
-        // Find communities in the same region
-        const sameBreadcrumb = communities
-          .filter(c => c.Region === community.Region && c.Name !== community.Name)
+        // Find communities in the same county
+        const sameCounty = communities
+          .filter(c => c.County === community.County && c.Name !== community.Name)
           .sort((a, b) => parseFloat(b["Latino Percentage"]) - parseFloat(a["Latino Percentage"]))
           .slice(0, 5); // Show top 5
         
-        if (sameBreadcrumb.length === 0) {
+        if (sameCounty.length === 0) {
           const noNearby = document.createElement("div");
-          noNearby.textContent = "No other communities found in this region.";
+          noNearby.textContent = "No other communities found in this county.";
           communitiesListElement.appendChild(noNearby);
         } else {
-          sameBreadcrumb.forEach(nearby => {
+          sameCounty.forEach(nearby => {
             const nearbyItem = document.createElement("div");
             nearbyItem.className = "community-item";
             nearbyItem.style.cursor = "pointer";
+            
+            // Get percentage color
+            const nearbyPercentage = parseFloat(nearby["Latino Percentage"]);
+            const nearbyColor = getPercentageColor(nearbyPercentage);
+            const nearbyRgbColor = `rgb(${nearbyColor[0]}, ${nearbyColor[1]}, ${nearbyColor[2]})`;
+            
             nearbyItem.innerHTML = `
-              <div>${nearby.Name}</div>
+              <div><span class="indicator" style="background-color: ${nearbyRgbColor};"></span>${nearby.Name}</div>
               <div>${formatPopulation(parseInt(nearby["Latino Population"]))} Latino (${nearby["Latino Percentage"]}%)</div>
             `;
             
@@ -1705,83 +1742,88 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
       }
     }
     
+    // Helper function to set active filter button
+    function setActiveFilterButton(button, buttonGroup) {
+      const buttons = buttonGroup || document.querySelectorAll(".filter-btn");
+      buttons.forEach(btn => {
+        btn.classList.remove("active");
+      });
+      button.classList.add("active");
+    }
+    
     // Set up event handlers for UI controls
     function setupEventHandlers() {
+      // Handle percentage slider
+      const percentageSlider = document.getElementById("percentageSlider");
+      const percentageValue = document.getElementById("percentageValue");
+      
+      percentageSlider.addEventListener("input", function() {
+        percentageValue.textContent = `${this.value}%`;
+        filterGraphics();
+        updateInfoPanel(selectedCommunity);
+      });
+      
       // Handle filter buttons - Latino percentage
       document.getElementById("filterAll").addEventListener("click", function() {
         currentFilter = 'all';
-        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(2) .filter-btn"));
+        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
         filterGraphics();
         updateInfoPanel(selectedCommunity);
       });
       
       document.getElementById("filterHigh").addEventListener("click", function() {
         currentFilter = 'high';
-        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(2) .filter-btn"));
+        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
         filterGraphics();
         updateInfoPanel(selectedCommunity);
       });
       
       document.getElementById("filterMed").addEventListener("click", function() {
         currentFilter = 'med';
-        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(2) .filter-btn"));
+        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
         filterGraphics();
         updateInfoPanel(selectedCommunity);
       });
       
       document.getElementById("filterLow").addEventListener("click", function() {
         currentFilter = 'low';
-        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(2) .filter-btn"));
-        filterGraphics();
-        updateInfoPanel(selectedCommunity);
-      });
-      
-      // Handle filter buttons - Regions
-      document.getElementById("filterAllRegions").addEventListener("click", function() {
-        currentRegionFilter = 'all';
         setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
         filterGraphics();
         updateInfoPanel(selectedCommunity);
       });
       
-      document.getElementById("filterCentralValley").addEventListener("click", function() {
-        currentRegionFilter = 'Central Valley';
+      document.getElementById("filterVeryLow").addEventListener("click", function() {
+        currentFilter = 'veryLow';
         setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
         filterGraphics();
         updateInfoPanel(selectedCommunity);
       });
       
-      document.getElementById("filterCoachella").addEventListener("click", function() {
-        currentRegionFilter = 'Coachella Valley';
-        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
+      // Handle filter buttons - Population Size
+      document.getElementById("filterAllSizes").addEventListener("click", function() {
+        currentSizeFilter = 'all';
+        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(3) .filter-btn"));
         filterGraphics();
         updateInfoPanel(selectedCommunity);
       });
       
-      document.getElementById("filterImperial").addEventListener("click", function() {
-        currentRegionFilter = 'Imperial Valley';
-        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
+      document.getElementById("filterLarge").addEventListener("click", function() {
+        currentSizeFilter = 'large';
+        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(3) .filter-btn"));
         filterGraphics();
         updateInfoPanel(selectedCommunity);
       });
       
-      document.getElementById("filterSalinas").addEventListener("click", function() {
-        currentRegionFilter = 'Salinas Valley';
-        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
+      document.getElementById("filterMedium").addEventListener("click", function() {
+        currentSizeFilter = 'medium';
+        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(3) .filter-btn"));
         filterGraphics();
         updateInfoPanel(selectedCommunity);
       });
       
-      document.getElementById("filterSantaMaria").addEventListener("click", function() {
-        currentRegionFilter = 'Santa Maria Valley';
-        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
-        filterGraphics();
-        updateInfoPanel(selectedCommunity);
-      });
-      
-      document.getElementById("filterOther").addEventListener("click", function() {
-        currentRegionFilter = 'Other';
-        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(1) .filter-btn"));
+      document.getElementById("filterSmall").addEventListener("click", function() {
+        currentSizeFilter = 'small';
+        setActiveFilterButton(this, document.querySelectorAll(".filter-group:nth-child(3) .filter-btn"));
         filterGraphics();
         updateInfoPanel(selectedCommunity);
       });
@@ -1827,15 +1869,6 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
       setupSearchFunctionality();
     }
     
-    // Helper function to set active filter button
-    function setActiveFilterButton(button, buttonGroup) {
-      const buttons = buttonGroup || document.querySelectorAll(".filter-btn");
-      buttons.forEach(btn => {
-        btn.classList.remove("active");
-      });
-      button.classList.add("active");
-    }
-    
     // Set up search functionality
     function setupSearchFunctionality() {
       const searchInput = document.getElementById("communitySearchInput");
@@ -1859,8 +1892,7 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
         // Find matching communities
         const matchingCommunities = communities.filter(community => 
           community.Name.toLowerCase().includes(searchTerm) ||
-          (community.County && community.County.toLowerCase().includes(searchTerm)) ||
-          (community.Region && community.Region.toLowerCase().includes(searchTerm))
+          (community.County && community.County.toLowerCase().includes(searchTerm))
         );
         
         // Create results element
@@ -1889,9 +1921,10 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
             const communityItem = document.createElement("div");
             communityItem.className = "community-item";
             
-            // Get color for region
-            const regionColor = getRegionColor(community.Region);
-            const rgbColor = `rgb(${regionColor[0]}, ${regionColor[1]}, ${regionColor[2]})`;
+            // Get color based on percentage
+            const percentage = parseFloat(community["Latino Percentage"]);
+            const percentageColor = getPercentageColor(percentage);
+            const rgbColor = `rgb(${percentageColor[0]}, ${percentageColor[1]}, ${percentageColor[2]})`;
             
             // Highlight search term
             let communityName = community.Name;
@@ -1903,13 +1936,13 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
                 communityName.substring(index + searchTerm.length);
             }
             
-            // Include region indicator
-            const regionIndicator = `<span class="region-indicator" style="background-color: ${rgbColor};"></span>`;
+            // Include percentage indicator
+            const indicator = `<span class="indicator" style="background-color: ${rgbColor};"></span>`;
             
             communityItem.innerHTML = `
-              <div class="community-name">${regionIndicator}${communityName}</div>
-              <div>${community.County || ""} County, ${community.Region}</div>
-              <div>${community["Latino Percentage"]}% Latino population</div>
+              <div class="community-name">${indicator}${communityName}</div>
+              <div>${community.County || ""} County</div>
+              <div>${formatPopulation(parseInt(community["Latino Population"]))} Latino (${community["Latino Percentage"]}%)</div>
             `;
             
             // Make clickable to zoom to community
@@ -1955,9 +1988,10 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
                 const communityItem = document.createElement("div");
                 communityItem.className = "community-item";
                 
-                // Get color for region
-                const regionColor = getRegionColor(community.Region);
-                const rgbColor = `rgb(${regionColor[0]}, ${regionColor[1]}, ${regionColor[2]})`;
+                // Get color based on percentage
+                const percentage = parseFloat(community["Latino Percentage"]);
+                const percentageColor = getPercentageColor(percentage);
+                const rgbColor = `rgb(${percentageColor[0]}, ${percentageColor[1]}, ${percentageColor[2]})`;
                 
                 // Highlight search term
                 let communityName = community.Name;
@@ -1969,13 +2003,13 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
                     communityName.substring(index + searchTerm.length);
                 }
                 
-                // Include region indicator
-                const regionIndicator = `<span class="region-indicator" style="background-color: ${rgbColor};"></span>`;
+                // Include percentage indicator
+                const indicator = `<span class="indicator" style="background-color: ${rgbColor};"></span>`;
                 
                 communityItem.innerHTML = `
-                  <div class="community-name">${regionIndicator}${communityName}</div>
-                  <div>${community.County || ""} County, ${community.Region}</div>
-                  <div>${community["Latino Percentage"]}% Latino population</div>
+                  <div class="community-name">${indicator}${communityName}</div>
+                  <div>${community.County || ""} County</div>
+                  <div>${formatPopulation(parseInt(community["Latino Population"]))} Latino (${community["Latino Percentage"]}%)</div>
                 `;
                 
                 // Make clickable to zoom to community
@@ -2024,7 +2058,7 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
       });
     }
     
-    // Use the AMD pattern as recommended by ArcGIS
+    // Use the ArcGIS JavaScript API
     require([
       "esri/Map", 
       "esri/views/MapView",
@@ -2040,11 +2074,14 @@ Santa Maria,Santa Barbara,109707,83968,76.54,Santa Maria Valley,34.9530,-120.435
       
       try {
         // Initialize the geocodeCache with provided data
-        for (const community of Object.values(csvData).flatMap(csv => 
-          Papa.parse(csv, { header: true, skipEmptyLines: true }).data
-        )) {
-          if (community.Name && community.Lat && community.Lng) {
-            geocodeCache[community.Name] = [parseFloat(community.Lng), parseFloat(community.Lat)];
+        for (const region in csvData) {
+          const regionData = csvData[region];
+          const parsedData = Papa.parse(regionData, { header: true, skipEmptyLines: true }).data;
+          
+          for (const community of parsedData) {
+            if (community.Name && community.Lat && community.Lng) {
+              geocodeCache[community.Name] = [parseFloat(community.Lng), parseFloat(community.Lat)];
+            }
           }
         }
         
